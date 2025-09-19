@@ -1,4 +1,9 @@
-// lib/screens/add_product_screen.dart
+// lib/screens/profile_screen.dart
+import 'package:flutter/material.dart';
+import '../services/auth_service.dart';
+import '../utils/app_colors.dart';
+import '../utils/app_styles.dart';
+import '../widgets/custom_button.// lib/screens/add_product_screen.dart
 import 'dart:io';
 import 'package:flutter/material.dart';
 import '../models/product.dart';
@@ -89,11 +94,11 @@ class _AddProductScreenState extends State<AddProductScreen> {
     showDialog(
       context: context,
       builder: (context) => AlertDialog(
-        title: Row(
+        title: const Row(
           children: [
-            const Icon(Icons.auto_awesome, color: AppColors.accent),
-            const SizedBox(width: 8),
-            const Text('AI Enhancement Ready!'),
+            Icon(Icons.auto_awesome, color: AppColors.accent),
+            SizedBox(width: 8),
+            Text('AI Enhancement Ready!'),
           ],
         ),
         content: SingleChildScrollView(
@@ -240,7 +245,7 @@ class _AddProductScreenState extends State<AddProductScreen> {
         description: _descriptionController.text.trim(),
         descriptionLocal: _aiResult?.localDescription ?? '',
         imageUrl: 'https://picsum.photos/400/400', // Mock URL
-        imageUrls: ['https://picsum.photos/400/400'], // Mock URLs
+        imageUrls: const ['https://picsum.photos/400/400'], // Mock URLs
         price: double.tryParse(_priceController.text) ?? 0.0,
         suggestedPrice: _aiResult?.suggestedPrice,
         sellerId: currentUser.id,
@@ -404,7 +409,7 @@ class _AddProductScreenState extends State<AddProductScreen> {
                   : Column(
                       mainAxisAlignment: MainAxisAlignment.center,
                       children: [
-                        Icon(
+                        const Icon(
                           Icons.add_a_photo,
                           size: 48,
                           color: AppColors.textHint,
@@ -680,3 +685,4 @@ class _AddProductScreenState extends State<AddProductScreen> {
       ),
     );
   }
+
