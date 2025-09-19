@@ -1,53 +1,46 @@
 // lib/widgets/custom_textfield.dart
 import 'package:flutter/material.dart';
-import 'package:flutter/services.dart';
 import '../utils/app_colors.dart';
 import '../utils/app_styles.dart';
 
 class CustomTextField extends StatefulWidget {
-  final String? label;
-  final String? hintText;
   final TextEditingController? controller;
+  final String? label;
+  final String? labelText;
+  final String? hint;
+  final String? hintText;
+  final String? helperText;
   final bool obscureText;
-  final TextInputType keyboardType;
-  final String? Function(String?)? validator;
-  final void Function(String)? onChanged;
-  final void Function()? onTap;
+  final TextInputType? keyboardType;
+  final int maxLines;
+  final bool enabled;
+  final bool readOnly;
   final IconData? prefixIcon;
   final IconData? suffixIcon;
-  final VoidCallback? onSuffixIconTap;
-  final bool readOnly;
-  final int? maxLines;
-  final int? maxLength;
-  final List<TextInputFormatter>? inputFormatters;
-  final bool enabled;
-  final String? errorText;
-  final String? helperText;
-  final TextCapitalization textCapitalization;
-  final FocusNode? focusNode;
+  final VoidCallback? onTap;
+  final Function(String)? onChanged;
+  final Function(String)? onSubmitted;
+  final String? Function(String?)? validator;
 
   const CustomTextField({
     super.key,
-    this.label,
-    this.hintText,
     this.controller,
+    this.label,
+    this.labelText,
+    this.hint,
+    this.hintText,
+    this.helperText,
     this.obscureText = false,
-    this.keyboardType = TextInputType.text,
-    this.validator,
-    this.onChanged,
-    this.onTap,
+    this.keyboardType,
+    this.maxLines = 1,
+    this.enabled = true,
+    this.readOnly = false,
     this.prefixIcon,
     this.suffixIcon,
-    this.onSuffixIconTap,
-    this.readOnly = false,
-    this.maxLines = 1,
-    this.maxLength,
-    this.inputFormatters,
-    this.enabled = true,
-    this.errorText,
-    this.helperText,
-    this.textCapitalization = TextCapitalization.none,
-    this.focusNode,
+    this.onTap,
+    this.onChanged,
+    this.onSubmitted,
+    this.validator,
   });
 
   @override
@@ -55,7 +48,7 @@ class CustomTextField extends StatefulWidget {
 }
 
 class _CustomTextFieldState extends State<CustomTextField> {
-  bool _obscureText = false;
+  late bool _obscureText;
 
   @override
   void initState() {
@@ -63,14 +56,23 @@ class _CustomTextFieldState extends State<CustomTextField> {
     _obscureText = widget.obscureText;
   }
 
+  void _toggleObscureText() {
+    setState(() {
+      _obscureText = !_obscureText;
+    });
+  }
+
   @override
   Widget build(BuildContext context) {
+    final effectiveLabel = widget.label ?? widget.labelText;
+    final effectiveHint = widget.hint ?? widget.hintText;
+
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        if (widget.label != null) ...[
+        if (effectiveLabel != null) ...[
           Text(
-            widget.label!,
+            effectiveLabel,
             style: AppStyles.bodyMedium.copyWith(
               fontWeight: FontWeight.w600,
               color: AppColors.textPrimary,
@@ -82,231 +84,64 @@ class _CustomTextFieldState extends State<CustomTextField> {
           controller: widget.controller,
           obscureText: _obscureText,
           keyboardType: widget.keyboardType,
-          validator: widget.validator,
-          onChanged: widget.onChanged,
-          onTap: widget.onTap,
-          readOnly: widget.readOnly,
-          maxLines: widget.maxLines,
-          maxLength: widget.maxLength,
-          inputFormatters: widget.inputFormatters,
+          maxLines: widget.obscureText ? 1 : widget.maxLines,
           enabled: widget.enabled,
-          textCapitalization: widget.textCapitalization,
-          focusNode: widget.focusNode,
-          style: AppStyles.bodyLarge,
-          decoration: _buildInputDecoration(),
-        ),
-        if (widget.helperText != null) ...[
-          const SizedBox(height: 4),
-          Text(
-            widget.helperText!,
-            style: AppStyles.bodySmall.copyWith(
-              color: AppColors.textSecondary,
+          readOnly: widget.readOnly,
+          onTap: widget.onTap,
+          onChanged: widget.onChanged,
+          onFieldSubmitted: widget.onSubmitted,
+          validator: widget.validator,
+          decoration: InputDecoration(
+            hintText: effectiveHint,
+            helperText: widget.helperText,
+            prefixIcon: widget.prefixIcon != null
+                ? Icon(widget.prefixIcon, color: AppColors.primary)
+                : null,
+            suffixIcon: _buildSuffixIcon(),
+            border: OutlineInputBorder(
+              borderRadius: BorderRadius.circular(12),
+              borderSide: const BorderSide(color: AppColors.border),
             ),
+            enabledBorder: OutlineInputBorder(
+              borderRadius: BorderRadius.circular(12),
+              borderSide: const BorderSide(color: AppColors.border),
+            ),
+            focusedBorder: OutlineInputBorder(
+              borderRadius: BorderRadius.circular(12),
+              borderSide: const BorderSide(color: AppColors.primary, width: 2),
+            ),
+            errorBorder: OutlineInputBorder(
+              borderRadius: BorderRadius.circular(12),
+              borderSide: const BorderSide(color: AppColors.error, width: 2),
+            ),
+            disabledBorder: OutlineInputBorder(
+              borderRadius: BorderRadius.circular(12),
+              borderSide: BorderSide(color: AppColors.border.withOpacity(0.5)),
+            ),
+            filled: true,
+            fillColor: widget.enabled ? AppColors.surface : AppColors.surfaceLight,
+            contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
           ),
-        ],
+        ),
       ],
-    );
-  }
-
-  InputDecoration _buildInputDecoration() {
-    return InputDecoration(
-      hintText: widget.hintText,
-      hintStyle: const TextStyle(color: AppColors.textHint),
-      filled: true,
-      fillColor: widget.enabled ? AppColors.surfaceLight : AppColors.border.withOpacity(0.1),
-      prefixIcon: widget.prefixIcon != null
-          ? Icon(widget.prefixIcon, color: AppColors.textSecondary)
-          : null,
-      suffixIcon: _buildSuffixIcon(),
-      errorText: widget.errorText,
-      errorStyle: AppStyles.bodySmall.copyWith(color: AppColors.error),
-      border: _buildBorder(),
-      enabledBorder: _buildBorder(),
-      focusedBorder: _buildBorder(color: AppColors.primary, width: 2),
-      errorBorder: _buildBorder(color: AppColors.error),
-      focusedErrorBorder: _buildBorder(color: AppColors.error, width: 2),
-      disabledBorder: _buildBorder(color: AppColors.border.withOpacity(0.5)),
-      contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
-      counterText: '', // Hide the counter text
     );
   }
 
   Widget? _buildSuffixIcon() {
     if (widget.obscureText) {
       return IconButton(
+        onPressed: _toggleObscureText,
         icon: Icon(
           _obscureText ? Icons.visibility : Icons.visibility_off,
           color: AppColors.textSecondary,
         ),
-        onPressed: () {
-          setState(() {
-            _obscureText = !_obscureText;
-          });
-        },
       );
     }
-
+    
     if (widget.suffixIcon != null) {
-      return IconButton(
-        icon: Icon(widget.suffixIcon, color: AppColors.textSecondary),
-        onPressed: widget.onSuffixIconTap,
-      );
+      return Icon(widget.suffixIcon, color: AppColors.primary);
     }
-
+    
     return null;
-  }
-
-  OutlineInputBorder _buildBorder({Color? color, double width = 1}) {
-    return OutlineInputBorder(
-      borderRadius: BorderRadius.circular(AppStyles.radiusMedium),
-      borderSide: BorderSide(
-        color: color ?? AppColors.border,
-        width: width,
-      ),
-    );
-  }
-}
-
-// Specialized text fields for common use cases
-class EmailTextField extends StatelessWidget {
-  final TextEditingController? controller;
-  final String? Function(String?)? validator;
-  final void Function(String)? onChanged;
-
-  const EmailTextField({
-    super.key,
-    this.controller,
-    this.validator,
-    this.onChanged,
-  });
-
-  @override
-  Widget build(BuildContext context) {
-    return CustomTextField(
-      label: 'Email Address',
-      hintText: 'Enter your email',
-      controller: controller,
-      keyboardType: TextInputType.emailAddress,
-      prefixIcon: Icons.email_outlined,
-      validator: validator ?? _defaultEmailValidator,
-      onChanged: onChanged,
-    );
-  }
-
-  String? _defaultEmailValidator(String? value) {
-    if (value == null || value.isEmpty) {
-      return 'Please enter your email';
-    }
-    if (!RegExp(r'^[\w-\.]+@([\w-]+\.)+[\w-]{2,4}$').hasMatch(value)) {
-      return 'Please enter a valid email';
-    }
-    return null;
-  }
-}
-
-class PasswordTextField extends StatelessWidget {
-  final TextEditingController? controller;
-  final String? Function(String?)? validator;
-  final void Function(String)? onChanged;
-  final String? label;
-
-  const PasswordTextField({
-    super.key,
-    this.controller,
-    this.validator,
-    this.onChanged,
-    this.label,
-  });
-
-  @override
-  Widget build(BuildContext context) {
-    return CustomTextField(
-      label: label ?? 'Password',
-      hintText: 'Enter your password',
-      controller: controller,
-      obscureText: true,
-      prefixIcon: Icons.lock_outlined,
-      validator: validator ?? _defaultPasswordValidator,
-      onChanged: onChanged,
-    );
-  }
-
-  String? _defaultPasswordValidator(String? value) {
-    if (value == null || value.isEmpty) {
-      return 'Please enter your password';
-    }
-    if (value.length < 6) {
-      return 'Password must be at least 6 characters';
-    }
-    return null;
-  }
-}
-
-class PhoneTextField extends StatelessWidget {
-  final TextEditingController? controller;
-  final String? Function(String?)? validator;
-  final void Function(String)? onChanged;
-
-  const PhoneTextField({
-    super.key,
-    this.controller,
-    this.validator,
-    this.onChanged,
-  });
-
-  @override
-  Widget build(BuildContext context) {
-    return CustomTextField(
-      label: 'Phone Number',
-      hintText: '+91 98765 43210',
-      controller: controller,
-      keyboardType: TextInputType.phone,
-      prefixIcon: Icons.phone_outlined,
-      validator: validator ?? _defaultPhoneValidator,
-      onChanged: onChanged,
-      inputFormatters: [
-        FilteringTextInputFormatter.digitsOnly,
-        LengthLimitingTextInputFormatter(10),
-      ],
-    );
-  }
-
-  String? _defaultPhoneValidator(String? value) {
-    if (value == null || value.isEmpty) {
-      return 'Please enter your phone number';
-    }
-    if (value.length != 10) {
-      return 'Please enter a valid 10-digit phone number';
-    }
-    return null;
-  }
-}
-
-class SearchTextField extends StatelessWidget {
-  final TextEditingController? controller;
-  final void Function(String)? onChanged;
-  final void Function(String)? onSubmitted;
-  final VoidCallback? onTap;
-  final String? hintText;
-
-  const SearchTextField({
-    super.key,
-    this.controller,
-    this.onChanged,
-    this.onSubmitted,
-    this.onTap,
-    this.hintText,
-  });
-
-  @override
-  Widget build(BuildContext context) {
-    return CustomTextField(
-      controller: controller,
-      hintText: hintText ?? 'Search products, artisans...',
-      prefixIcon: Icons.search,
-      onChanged: onChanged,
-      onTap: onTap,
-      keyboardType: TextInputType.text,
-    );
   }
 }
