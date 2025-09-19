@@ -1,197 +1,518 @@
-// lib/screens/profile_screen.dart
-import 'package:flutter/material.dart';
-import '../services/auth_service.dart';
-import '../utils/app_colors.dart';
-import '../utils/app_styles.dart';
-import '../widgets/custom_button.// lib/screens/add_product_screen.dart
-import 'dart:io';
+// lib/screens/product_detail_screen.dart
 import 'package:flutter/material.dart';
 import '../models/product.dart';
-import '../services/ai_service.dart';
-import '../services/auth_service.dart';
+import '../models/user.dart';
+import '../widgets/custom_button.dart';
 import '../utils/app_colors.dart';
 import '../utils/app_styles.dart';
-import '../widgets/custom_button.dart';
-import '../widgets/custom_textfield.dart';
+import '../services/ai_service.dart';
 
-class AddProductScreen extends StatefulWidget {
-  const AddProductScreen({super.key});
+class ProductDetailScreen extends StatefulWidget {
+  final Product product;
+  
+  const ProductDetailScreen({
+    super.key,
+    required this.product,
+  });
 
   @override
-  State<AddProductScreen> createState() => _AddProductScreenState();
+  State<ProductDetailScreen> createState() => _ProductDetailScreenState();
 }
 
-class _AddProductScreenState extends State<AddProductScreen> {
-  final _formKey = GlobalKey<FormState>();
-  final _nameController = TextEditingController();
-  final _descriptionController = TextEditingController();
-  final _priceController = TextEditingController();
-  final _culturalStoryController = TextEditingController();
-  final _aiService = AIService();
-  final _authService = AuthService();
+class _ProductDetailScreenState extends State<ProductDetailScreen> 
+    with SingleTickerProviderStateMixin {
+  late TabController _tabController;
+  final AIService _aiService = AIService();
   
-  File? _selectedImage;
-  ProductCategory _selectedCategory = ProductCategory.handmade;
-  bool _isAnalyzing = false;
-  bool _isSaving = false;
-  AIEnhancementResult? _aiResult;
-  List<String> _tags = [];
-  bool _showAIEnhancements = false;
+  bool _isFavorited = false;
+  bool _isInCart = false;
+  int _quantity = 1;
+  String? _chatResponse;
+  bool _isChatLoading = false;
+  final TextEditingController _chatController = TextEditingController();
+  
+  // Mock artisan data - in real app, fetch from backend
+  late User artisan;
+  
+  @override
+  void initState() {
+    super.initState();
+    _tabController = TabController(length: 3, vsync: this);
+    
+    // Mock artisan data
+    artisan = User(
+      id: widget.product.sellerId,
+      name: widget.product.sellerName ?? 'Master Artisan',
+      email: 'artisan@example.com',
+      phone: '+91 9876543210',
+      role: UserRole.seller,
+      verificationStatus: VerificationStatus.verified,
+      address: 'Traditional Craft Village, India',
+      bio: 'Third generation craftsperson specializing in traditional handicrafts',
+      createdAt: DateTime.now().subtract(const Duration(days: 365)),
+      isVerifiedArtisan: true,
+    );
+  }
   
   @override
   void dispose() {
-    _nameController.dispose();
-    _descriptionController.dispose();
-    _priceController.dispose();
-    _culturalStoryController.dispose();
+    _tabController.dispose();
+    _chatController.dispose();
     super.dispose();
   }
 
-  Future<void> _pickImage() async {
-    // Mock image picker - in real app use image_picker package
+  Future<void> _askAIQuestion(String question) async {
+    if (question.trim().isEmpty) return;
+    
     setState(() {
-      _selectedImage = File('mock_image_path'); // Mock file
+      _isChatLoading = true;
+      _chatResponse = null;
     });
     
-    if (_selectedImage != null) {
-      await _analyzeImage();
-    }
-  }
-
-  Future<void> _analyzeImage() async {
-    if (_selectedImage == null) return;
-    
-    setState(() => _isAnalyzing = true);
-    
     try {
-      _aiResult = await _aiService.analyzeProductImage(
-        _selectedImage!,
-        _descriptionController.text.isNotEmpty ? _descriptionController.text : null,
+      final response = await _aiService.answerProductQuestion(
+        widget.product,
+        question,
       );
       
       setState(() {
-        _showAIEnhancements = true;
-        _selectedCategory = _aiResult!.suggestedCategory;
-        _tags = _aiResult!.tags;
+        _chatResponse = response;
       });
-      
-      _showAIEnhancementDialog();
     } catch (e) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text('Failed to analyze image. Please try again.'),
-          backgroundColor: AppColors.error,
-        ),
-      );
+      setState(() {
+        _chatResponse = 'Sorry, I couldn\'t answer that question right now. Please try again.';
+      });
     } finally {
-      setState(() => _isAnalyzing = false);
+      setState(() {
+        _isChatLoading = false;
+      });
     }
   }
 
-  void _showAIEnhancementDialog() {
-    if (_aiResult == null) return;
+  void _addToCart() {
+    setState(() {
+      _isInCart = true;
+    });
     
-    showDialog(
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        content: Text('${widget.product.name} added to cart!'),
+        backgroundColor: AppColors.success,
+        action: SnackBarAction(
+          label: 'View Cart',
+          textColor: AppColors.textOnPrimary,
+          onPressed: () {
+            Navigator.pushNamed(context, '/cart');
+          },
+        ),
+      ),
+    );
+  }
+
+  void _toggleFavorite() {
+    setState(() {
+      _isFavorited = !_isFavorited;
+    });
+    
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        content: Text(
+          _isFavorited 
+              ? '${widget.product.name} added to favorites!' 
+              : '${widget.product.name} removed from favorites',
+        ),
+        backgroundColor: _isFavorited ? AppColors.success : AppColors.textSecondary,
+      ),
+    );
+  }
+
+  void _contactArtisan() {
+    showModalBottomSheet(
       context: context,
-      builder: (context) => AlertDialog(
-        title: const Row(
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(16)),
+      ),
+      builder: (context) => Container(
+        padding: const EdgeInsets.all(16),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
           children: [
-            Icon(Icons.auto_awesome, color: AppColors.accent),
-            SizedBox(width: 8),
-            Text('AI Enhancement Ready!'),
+            Row(
+              children: [
+                CircleAvatar(
+                  radius: 30,
+                  backgroundColor: AppColors.primaryLight,
+                  child: Text(
+                    artisan.name.substring(0, 1).toUpperCase(),
+                    style: const TextStyle(
+                      color: AppColors.textOnPrimary,
+                      fontSize: 24,
+                      fontWeight: FontWeight.bold,
+                    ),
+                  ),
+                ),
+                const SizedBox(width: 16),
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        artisan.name,
+                        style: AppStyles.titleLarge,
+                      ),
+                      if (artisan.isVerifiedArtisan)
+                        Row(
+                          children: [
+                            Icon(
+                              Icons.verified,
+                              size: 16,
+                              color: AppColors.artisanGold,
+                            ),
+                            const SizedBox(width: 4),
+                            Text(
+                              'Verified Artisan',
+                              style: AppStyles.bodySmall.copyWith(
+                                color: AppColors.artisanGold,
+                              ),
+                            ),
+                          ],
+                        ),
+                    ],
+                  ),
+                ),
+              ],
+            ),
+            const SizedBox(height: 24),
+            Row(
+              children: [
+                Expanded(
+                  child: OutlinedCustomButton(
+                    text: 'Call',
+                    onPressed: () {
+                      Navigator.pop(context);
+                      ScaffoldMessenger.of(context).showSnackBar(
+                        const SnackBar(content: Text('Calling feature coming soon!')),
+                      );
+                    },
+                    icon: Icons.phone,
+                  ),
+                ),
+                const SizedBox(width: 12),
+                Expanded(
+                  child: PrimaryButton(
+                    text: 'Message',
+                    onPressed: () {
+                      Navigator.pop(context);
+                      ScaffoldMessenger.of(context).showSnackBar(
+                        const SnackBar(content: Text('Messaging feature coming soon!')),
+                      );
+                    },
+                    icon: Icons.message,
+                    isFullWidth: false,
+                  ),
+                ),
+              ],
+            ),
+            const SizedBox(height: 16),
           ],
         ),
-        content: SingleChildScrollView(
-          child: Column(
+      ),
+    );
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return Scaffold(
+      backgroundColor: AppColors.background,
+      body: CustomScrollView(
+        slivers: [
+          _buildSliverAppBar(),
+          SliverToBoxAdapter(
+            child: Column(
+              children: [
+                _buildProductInfo(),
+                _buildTabSection(),
+              ],
+            ),
+          ),
+        ],
+      ),
+      bottomNavigationBar: _buildBottomBar(),
+    );
+  }
+
+  Widget _buildSliverAppBar() {
+    return SliverAppBar(
+      expandedHeight: 300,
+      floating: false,
+      pinned: true,
+      backgroundColor: AppColors.primary,
+      foregroundColor: AppColors.textOnPrimary,
+      actions: [
+        IconButton(
+          onPressed: _toggleFavorite,
+          icon: Icon(
+            _isFavorited ? Icons.favorite : Icons.favorite_border,
+            color: _isFavorited ? AppColors.error : AppColors.textOnPrimary,
+          ),
+        ),
+        IconButton(
+          onPressed: () {
+            ScaffoldMessenger.of(context).showSnackBar(
+              const SnackBar(content: Text('Share feature coming soon!')),
+            );
+          },
+          icon: const Icon(Icons.share),
+        ),
+      ],
+      flexibleSpace: FlexibleSpaceBar(
+        background: Stack(
+          fit: StackFit.expand,
+          children: [
+            // Product Image
+            widget.product.imageUrls.isNotEmpty
+                ? PageView.builder(
+                    itemCount: widget.product.imageUrls.length,
+                    itemBuilder: (context, index) {
+                      return Image.network(
+                        widget.product.imageUrls[index],
+                        fit: BoxFit.cover,
+                        errorBuilder: (context, error, stackTrace) {
+                          return Container(
+                            color: AppColors.surfaceLight,
+                            child: const Icon(
+                              Icons.image_not_supported,
+                              size: 64,
+                              color: AppColors.textSecondary,
+                            ),
+                          );
+                        },
+                      );
+                    },
+                  )
+                : Container(
+                    color: AppColors.surfaceLight,
+                    child: const Icon(
+                      Icons.image,
+                      size: 64,
+                      color: AppColors.textSecondary,
+                    ),
+                  ),
+            
+            // Gradient overlay
+            Container(
+              decoration: BoxDecoration(
+                gradient: LinearGradient(
+                  begin: Alignment.topCenter,
+                  end: Alignment.bottomCenter,
+                  colors: [
+                    Colors.transparent,
+                    Colors.black.withOpacity(0.3),
+                  ],
+                ),
+              ),
+            ),
+            
+            // Image indicators
+            if (widget.product.imageUrls.length > 1)
+              Positioned(
+                bottom: 16,
+                left: 0,
+                right: 0,
+                child: Row(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  children: List.generate(
+                    widget.product.imageUrls.length,
+                    (index) => Container(
+                      width: 8,
+                      height: 8,
+                      margin: const EdgeInsets.symmetric(horizontal: 4),
+                      decoration: BoxDecoration(
+                        shape: BoxShape.circle,
+                        color: AppColors.textOnPrimary.withOpacity(0.7),
+                      ),
+                    ),
+                  ),
+                ),
+              ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildProductInfo() {
+    return Container(
+      color: AppColors.surface,
+      padding: const EdgeInsets.all(16),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          // Product Name and Price
+          Row(
             crossAxisAlignment: CrossAxisAlignment.start,
-            mainAxisSize: MainAxisSize.min,
             children: [
-              Text(
-                'AI Analysis Results:',
-                style: AppStyles.bodyMedium.copyWith(fontWeight: FontWeight.w600),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      widget.product.name,
+                      style: AppStyles.headlineMedium,
+                    ),
+                    const SizedBox(height: 4),
+                    Text(
+                      widget.product.category.name.toUpperCase(),
+                      style: AppStyles.bodySmall.copyWith(
+                        color: AppColors.primary,
+                        fontWeight: FontWeight.bold,
+                      ),
+                    ),
+                  ],
+                ),
               ),
-              const SizedBox(height: 16),
-              
-              _buildEnhancementItem(
-                'Category',
-                _aiResult!.suggestedCategory.name.toUpperCase(),
-                Icons.category,
-              ),
-              
-              _buildEnhancementItem(
-                'Suggested Price',
-                '₹${_aiResult!.suggestedPrice.toStringAsFixed(0)}',
-                Icons.price_change,
-              ),
-              
-              _buildEnhancementItem(
-                'Enhanced Description',
-                _aiResult!.enhancedDescription,
-                Icons.description,
-                isLong: true,
-              ),
-              
-              _buildEnhancementItem(
-                'Local Description',
-                _aiResult!.localDescription,
-                Icons.language,
-                isLong: true,
-              ),
-              
-              _buildEnhancementItem(
-                'Tags',
-                _aiResult!.tags.join(', '),
-                Icons.tag,
-                isLong: true,
+              Column(
+                crossAxisAlignment: CrossAxisAlignment.end,
+                children: [
+                  Text(
+                    '₹${widget.product.price.toStringAsFixed(0)}',
+                    style: AppStyles.headlineMedium.copyWith(
+                      color: AppColors.primary,
+                      fontWeight: FontWeight.bold,
+                    ),
+                  ),
+                  if (widget.product.suggestedPrice != null && 
+                      widget.product.suggestedPrice! > widget.product.price)
+                    Text(
+                      '₹${widget.product.suggestedPrice!.toStringAsFixed(0)}',
+                      style: AppStyles.bodySmall.copyWith(
+                        color: AppColors.textSecondary,
+                        decoration: TextDecoration.lineThrough,
+                      ),
+                    ),
+                ],
               ),
             ],
           ),
-        ),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(context),
-            child: const Text('Review Later'),
+          
+          const SizedBox(height: 16),
+          
+          // Tags
+          if (widget.product.tags.isNotEmpty)
+            Wrap(
+              spacing: 8,
+              runSpacing: 4,
+              children: widget.product.tags.map((tag) => Container(
+                padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                decoration: BoxDecoration(
+                  color: AppColors.primaryLight.withOpacity(0.1),
+                  borderRadius: BorderRadius.circular(12),
+                  border: Border.all(color: AppColors.primaryLight),
+                ),
+                child: Text(
+                  tag,
+                  style: AppStyles.bodySmall.copyWith(
+                    color: AppColors.primary,
+                  ),
+                ),
+              )).toList(),
+            ),
+          
+          const SizedBox(height: 16),
+          
+          // Artisan Info
+          _buildArtisanInfo(),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildArtisanInfo() {
+    return Container(
+      padding: const EdgeInsets.all(16),
+      decoration: BoxDecoration(
+        color: AppColors.surfaceLight,
+        borderRadius: BorderRadius.circular(12),
+      ),
+      child: Row(
+        children: [
+          CircleAvatar(
+            radius: 24,
+            backgroundColor: AppColors.primaryLight,
+            child: Text(
+              artisan.name.substring(0, 1).toUpperCase(),
+              style: const TextStyle(
+                color: AppColors.textOnPrimary,
+                fontSize: 18,
+                fontWeight: FontWeight.bold,
+              ),
+            ),
           ),
-          ElevatedButton(
-            onPressed: () {
-              _applyAIEnhancements();
-              Navigator.pop(context);
-            },
-            child: const Text('Apply All'),
+          const SizedBox(width: 12),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Row(
+                  children: [
+                    Text(
+                      artisan.name,
+                      style: AppStyles.titleMedium,
+                    ),
+                    if (artisan.isVerifiedArtisan) ..[
+                      const SizedBox(width: 4),
+                      Icon(
+                        Icons.verified,
+                        size: 16,
+                        color: AppColors.artisanGold,
+                      ),
+                    ],
+                  ],
+                ),
+                const SizedBox(height: 2),
+                Text(
+                  artisan.address ?? 'Local Artisan',
+                  style: AppStyles.bodySmall.copyWith(
+                    color: AppColors.textSecondary,
+                  ),
+                ),
+              ],
+            ),
+          ),
+          OutlinedCustomButton(
+            text: 'Contact',
+            onPressed: _contactArtisan,
+            isFullWidth: false,
           ),
         ],
       ),
     );
   }
 
-  Widget _buildEnhancementItem(String title, String content, IconData icon, {bool isLong = false}) {
-    return Padding(
-      padding: const EdgeInsets.only(bottom: 12),
-      child: Row(
-        crossAxisAlignment: CrossAxisAlignment.start,
+  Widget _buildTabSection() {
+    return Container(
+      color: AppColors.surface,
+      child: Column(
         children: [
-          Icon(icon, size: 16, color: AppColors.primary),
-          const SizedBox(width: 8),
-          Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
+          TabBar(
+            controller: _tabController,
+            labelColor: AppColors.primary,
+            unselectedLabelColor: AppColors.textSecondary,
+            indicatorColor: AppColors.primary,
+            tabs: const [
+              Tab(text: 'Description'),
+              Tab(text: 'Story'),
+              Tab(text: 'AI Chat'),
+            ],
+          ),
+          SizedBox(
+            height: 400,
+            child: TabBarView(
+              controller: _tabController,
               children: [
-                Text(
-                  title,
-                  style: AppStyles.bodySmall.copyWith(
-                    fontWeight: FontWeight.w600,
-                    color: AppColors.primary,
-                  ),
-                ),
-                const SizedBox(height: 4),
-                Text(
-                  content,
-                  style: AppStyles.bodySmall.copyWith(
-                    color: AppColors.textSecondary,
-                  ),
-                  maxLines: isLong ? null : 2,
-                  overflow: isLong ? null : TextOverflow.ellipsis,
-                ),
+                _buildDescriptionTab(),
+                _buildStoryTab(),
+                _buildChatTab(),
               ],
             ),
           ),
@@ -200,489 +521,430 @@ class _AddProductScreenState extends State<AddProductScreen> {
     );
   }
 
-  void _applyAIEnhancements() {
-    if (_aiResult == null) return;
-    
-    setState(() {
-      _descriptionController.text = _aiResult!.enhancedDescription;
-      _priceController.text = _aiResult!.suggestedPrice.toStringAsFixed(0);
-      _selectedCategory = _aiResult!.suggestedCategory;
-      _tags = _aiResult!.tags;
-    });
-    
-    ScaffoldMessenger.of(context).showSnackBar(
-      const SnackBar(
-        content: Text('AI enhancements applied successfully!'),
-        backgroundColor: AppColors.success,
+  Widget _buildDescriptionTab() {
+    return SingleChildScrollView(
+      padding: const EdgeInsets.all(16),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text(
+            'Product Description',
+            style: AppStyles.titleLarge,
+          ),
+          const SizedBox(height: 12),
+          Text(
+            widget.product.description,
+            style: AppStyles.bodyMedium,
+            textAlign: TextAlign.justify,
+          ),
+          
+          if (widget.product.descriptionLocal.isNotEmpty) ..[
+            const SizedBox(height: 20),
+            Text(
+              'Local Description',
+              style: AppStyles.titleMedium.copyWith(
+                color: AppColors.primary,
+              ),
+            ),
+            const SizedBox(height: 8),
+            Container(
+              padding: const EdgeInsets.all(12),
+              decoration: BoxDecoration(
+                color: AppColors.primaryLight.withOpacity(0.1),
+                borderRadius: BorderRadius.circular(8),
+                border: Border.all(
+                  color: AppColors.primaryLight.withOpacity(0.3),
+                ),
+              ),
+              child: Text(
+                widget.product.descriptionLocal,
+                style: AppStyles.bodyMedium.copyWith(
+                  fontStyle: FontStyle.italic,
+                ),
+                textAlign: TextAlign.justify,
+              ),
+            ),
+          ],
+          
+          const SizedBox(height: 20),
+          Text(
+            'Product Details',
+            style: AppStyles.titleMedium,
+          ),
+          const SizedBox(height: 12),
+          
+          _buildDetailRow('Category', widget.product.category.name.toUpperCase()),
+          _buildDetailRow('Created', _formatDate(widget.product.createdAt)),
+          _buildDetailRow('Availability', widget.product.isAvailable ? 'In Stock' : 'Out of Stock'),
+          if (widget.product.tags.isNotEmpty)
+            _buildDetailRow('Tags', widget.product.tags.join(', ')),
+        ],
       ),
     );
   }
 
-  Future<void> _saveProduct() async {
-    if (!_formKey.currentState!.validate()) return;
-    if (_selectedImage == null) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text('Please select a product image'),
-          backgroundColor: AppColors.error,
-        ),
-      );
-      return;
-    }
-
-    setState(() => _isSaving = true);
-
-    try {
-      final currentUser = _authService.currentUser;
-      if (currentUser == null) {
-        throw Exception('User not logged in');
-      }
-
-      // Create product object (in real app, save to database)
-      final product = Product(
-        id: 'prod_${DateTime.now().millisecondsSinceEpoch}',
-        name: _nameController.text.trim(),
-        description: _descriptionController.text.trim(),
-        descriptionLocal: _aiResult?.localDescription ?? '',
-        imageUrl: 'https://picsum.photos/400/400', // Mock URL
-        imageUrls: const ['https://picsum.photos/400/400'], // Mock URLs
-        price: double.tryParse(_priceController.text) ?? 0.0,
-        suggestedPrice: _aiResult?.suggestedPrice,
-        sellerId: currentUser.id,
-        sellerName: currentUser.name,
-        category: _selectedCategory,
-        tags: _tags,
-        createdAt: DateTime.now(),
-        updatedAt: DateTime.now(),
-        aiEnhancementData: _aiResult?.analysisData,
-        culturalStory: _culturalStoryController.text.trim().isNotEmpty 
-            ? _culturalStoryController.text.trim() 
-            : null,
-      );
-
-      // Mock save operation
-      await Future.delayed(const Duration(seconds: 2));
-
-      if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(
-            content: Text('Product added successfully!'),
-            backgroundColor: AppColors.success,
-          ),
-        );
-        Navigator.of(context).pop();
-      }
-    } catch (e) {
-      if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text('Failed to save product: ${e.toString()}'),
-            backgroundColor: AppColors.error,
-          ),
-        );
-      }
-    } finally {
-      if (mounted) setState(() => _isSaving = false);
-    }
-  }
-
-  @override
-  Widget build(BuildContext context) {
-    return Scaffold(
-      backgroundColor: AppColors.background,
-      appBar: AppBar(
-        title: const Text('Add New Product'),
-        actions: [
-          if (_showAIEnhancements)
-            IconButton(
-              icon: const Icon(Icons.auto_awesome),
-              onPressed: _showAIEnhancementDialog,
-              tooltip: 'View AI Suggestions',
-            ),
-        ],
-      ),
-      body: Form(
-        key: _formKey,
-        child: SingleChildScrollView(
-          padding: const EdgeInsets.all(AppStyles.spacing16),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.stretch,
+  Widget _buildStoryTab() {
+    return SingleChildScrollView(
+      padding: const EdgeInsets.all(16),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
             children: [
-              // Image Picker Section
-              _buildImageSection(),
-              
-              const SizedBox(height: AppStyles.spacing24),
-              
-              // Basic Information
-              _buildBasicInfoSection(),
-              
-              const SizedBox(height: AppStyles.spacing24),
-              
-              // AI Enhancement Section
-              if (_showAIEnhancements) _buildAIEnhancementSection(),
-              
-              const SizedBox(height: AppStyles.spacing24),
-              
-              // Cultural Story Section
-              _buildCulturalStorySection(),
-              
-              const SizedBox(height: AppStyles.spacing32),
-              
-              // Save Button
-              PrimaryButton(
-                text: 'Add Product',
-                onPressed: _saveProduct,
-                isLoading: _isSaving,
-                icon: Icons.add,
+              Icon(
+                Icons.auto_stories,
+                color: AppColors.artisanGold,
+                size: 28,
+              ),
+              const SizedBox(width: 8),
+              Text(
+                'Artisan Story',
+                style: AppStyles.titleLarge.copyWith(
+                  color: AppColors.artisanGold,
+                ),
               ),
             ],
           ),
-        ),
-      ),
-    );
-  }
-
-  Widget _buildImageSection() {
-    return Container(
-      decoration: AppStyles.cardDecoration,
-      padding: const EdgeInsets.all(AppStyles.spacing16),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Text(
-            'Product Image',
-            style: AppStyles.heading3,
-          ),
-          const SizedBox(height: AppStyles.spacing12),
+          const SizedBox(height: 16),
           
-          GestureDetector(
-            onTap: _pickImage,
-            child: Container(
-              height: 200,
+          if (widget.product.culturalStory != null && widget.product.culturalStory!.isNotEmpty)
+            Container(
+              padding: const EdgeInsets.all(16),
               decoration: BoxDecoration(
-                color: AppColors.surfaceLight,
-                borderRadius: BorderRadius.circular(AppStyles.radiusMedium),
+                color: AppColors.artisanGold.withOpacity(0.1),
+                borderRadius: BorderRadius.circular(12),
                 border: Border.all(
-                  color: _selectedImage != null ? AppColors.primary : AppColors.border,
-                  width: 2,
-                  style: BorderStyle.solid,
+                  color: AppColors.artisanGold.withOpacity(0.3),
                 ),
               ),
-              child: _selectedImage != null
-                  ? Stack(
-                      children: [
-                        ClipRRect(
-                          borderRadius: BorderRadius.circular(AppStyles.radiusMedium - 2),
-                          child: Container(
-                            width: double.infinity,
-                            height: double.infinity,
-                            color: AppColors.primary.withOpacity(0.1),
-                            child: const Icon(
-                              Icons.image,
-                              size: 80,
-                              color: AppColors.primary,
-                            ),
-                          ),
-                        ),
-                        if (_isAnalyzing)
-                          Container(
-                            decoration: BoxDecoration(
-                              color: Colors.black.withOpacity(0.7),
-                              borderRadius: BorderRadius.circular(AppStyles.radiusMedium - 2),
-                            ),
-                            child: const Center(
-                              child: Column(
-                                mainAxisAlignment: MainAxisAlignment.center,
-                                children: [
-                                  CircularProgressIndicator(color: AppColors.accent),
-                                  SizedBox(height: 16),
-                                  Text(
-                                    'AI is analyzing your image...',
-                                    style: TextStyle(color: Colors.white),
-                                  ),
-                                ],
-                              ),
-                            ),
-                          ),
-                      ],
-                    )
-                  : Column(
-                      mainAxisAlignment: MainAxisAlignment.center,
-                      children: [
-                        const Icon(
-                          Icons.add_a_photo,
-                          size: 48,
-                          color: AppColors.textHint,
-                        ),
-                        const SizedBox(height: 8),
-                        Text(
-                          'Tap to add product image',
-                          style: AppStyles.bodyMedium.copyWith(
-                            color: AppColors.textHint,
-                          ),
-                        ),
-                        const SizedBox(height: 4),
-                        Text(
-                          'AI will analyze and enhance automatically',
-                          style: AppStyles.bodySmall.copyWith(
-                            color: AppColors.primary,
-                          ),
-                        ),
-                      ],
+              child: Text(
+                widget.product.culturalStory!,
+                style: AppStyles.bodyMedium,
+                textAlign: TextAlign.justify,
+              ),
+            )
+          else
+            Container(
+              padding: const EdgeInsets.all(24),
+              decoration: BoxDecoration(
+                color: AppColors.surfaceLight,
+                borderRadius: BorderRadius.circular(12),
+              ),
+              child: Column(
+                children: [
+                  Icon(
+                    Icons.auto_stories_outlined,
+                    size: 48,
+                    color: AppColors.textSecondary,
+                  ),
+                  const SizedBox(height: 12),
+                  Text(
+                    'The artisan hasn\'t shared a story for this product yet.',
+                    style: AppStyles.bodyMedium.copyWith(
+                      color: AppColors.textSecondary,
                     ),
+                    textAlign: TextAlign.center,
+                  ),
+                ],
+              ),
             ),
+          
+          const SizedBox(height: 24),
+          
+          // Artisan Bio
+          Text(
+            'About the Artisan',
+            style: AppStyles.titleMedium,
+          ),
+          const SizedBox(height: 12),
+          Text(
+            artisan.bio ?? 'A skilled craftsperson dedicated to traditional techniques.',
+            style: AppStyles.bodyMedium,
+            textAlign: TextAlign.justify,
           ),
         ],
       ),
     );
   }
 
-  Widget _buildBasicInfoSection() {
+  Widget _buildChatTab() {
     return Container(
-      decoration: AppStyles.cardDecoration,
-      padding: const EdgeInsets.all(AppStyles.spacing16),
+      padding: const EdgeInsets.all(16),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
+          Row(
+            children: [
+              Icon(
+                Icons.smart_toy,
+                color: AppColors.accent,
+                size: 24,
+              ),
+              const SizedBox(width: 8),
+              Text(
+                'Ask AI about this product',
+                style: AppStyles.titleMedium.copyWith(
+                  color: AppColors.accent,
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 8),
           Text(
-            'Basic Information',
-            style: AppStyles.heading3,
+            'Get instant answers about the product, care instructions, or cultural significance',
+            style: AppStyles.bodySmall.copyWith(
+              color: AppColors.textSecondary,
+            ),
           ),
-          const SizedBox(height: AppStyles.spacing16),
+          const SizedBox(height: 16),
           
-          CustomTextField(
-            label: 'Product Name',
-            hintText: 'Enter product name',
-            controller: _nameController,
-            validator: (value) {
-              if (value == null || value.isEmpty) {
-                return 'Please enter product name';
-              }
-              return null;
-            },
-          ),
-          
-          const SizedBox(height: AppStyles.spacing16),
-          
-          CustomTextField(
-            label: 'Description',
-            hintText: 'Describe your product',
-            controller: _descriptionController,
-            maxLines: 3,
-            validator: (value) {
-              if (value == null || value.isEmpty) {
-                return 'Please enter product description';
-              }
-              return null;
-            },
+          // Quick Questions
+          Wrap(
+            spacing: 8,
+            runSpacing: 8,
+            children: [
+              _buildQuickQuestion('How is this made?'),
+              _buildQuickQuestion('Care instructions?'),
+              _buildQuickQuestion('Cultural significance?'),
+              _buildQuickQuestion('Similar products?'),
+            ],
           ),
           
-          const SizedBox(height: AppStyles.spacing16),
+          const SizedBox(height: 16),
           
+          // Chat Input
           Row(
             children: [
               Expanded(
-                flex: 2,
-                child: CustomTextField(
-                  label: 'Price (₹)',
-                  hintText: '0',
-                  controller: _priceController,
-                  keyboardType: TextInputType.number,
-                  validator: (value) {
-                    if (value == null || value.isEmpty) {
-                      return 'Please enter price';
+                child: TextField(
+                  controller: _chatController,
+                  decoration: InputDecoration(
+                    hintText: 'Ask anything about this product...',
+                    border: OutlineInputBorder(
+                      borderRadius: BorderRadius.circular(12),
+                    ),
+                    contentPadding: const EdgeInsets.symmetric(
+                      horizontal: 16,
+                      vertical: 12,
+                    ),
+                  ),
+                  onSubmitted: (value) {
+                    if (value.trim().isNotEmpty) {
+                      _askAIQuestion(value);
+                      _chatController.clear();
                     }
-                    if (double.tryParse(value) == null) {
-                      return 'Please enter valid price';
-                    }
-                    return null;
                   },
                 ),
               ),
-              const SizedBox(width: 12),
-              Expanded(
-                flex: 3,
+              const SizedBox(width: 8),
+              IconButton(
+                onPressed: _isChatLoading ? null : () {
+                  if (_chatController.text.trim().isNotEmpty) {
+                    _askAIQuestion(_chatController.text);
+                    _chatController.clear();
+                  }
+                },
+                icon: _isChatLoading 
+                    ? const SizedBox(
+                        width: 20,
+                        height: 20,
+                        child: CircularProgressIndicator(strokeWidth: 2),
+                      )
+                    : const Icon(Icons.send),
+                color: AppColors.primary,
+              ),
+            ],
+          ),
+          
+          const SizedBox(height: 16),
+          
+          // Chat Response
+          if (_chatResponse != null)
+            Expanded(
+              child: Container(
+                width: double.infinity,
+                padding: const EdgeInsets.all(16),
+                decoration: BoxDecoration(
+                  color: AppColors.surfaceLight,
+                  borderRadius: BorderRadius.circular(12),
+                ),
+                child: SingleChildScrollView(
+                  child: Text(
+                    _chatResponse!,
+                    style: AppStyles.bodyMedium,
+                  ),
+                ),
+              ),
+            )
+          else if (_isChatLoading)
+            Expanded(
+              child: Center(
                 child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
+                  mainAxisAlignment: MainAxisAlignment.center,
                   children: [
+                    const CircularProgressIndicator(),
+                    const SizedBox(height: 16),
                     Text(
-                      'Category',
+                      'AI is thinking...',
                       style: AppStyles.bodyMedium.copyWith(
-                        fontWeight: FontWeight.w600,
-                        color: AppColors.textPrimary,
-                      ),
-                    ),
-                    const SizedBox(height: 8),
-                    Container(
-                      padding: const EdgeInsets.symmetric(horizontal: 12),
-                      decoration: BoxDecoration(
-                        color: AppColors.surfaceLight,
-                        borderRadius: BorderRadius.circular(AppStyles.radiusMedium),
-                        border: Border.all(color: AppColors.border),
-                      ),
-                      child: DropdownButtonHideUnderline(
-                        child: DropdownButton<ProductCategory>(
-                          value: _selectedCategory,
-                          isExpanded: true,
-                          items: ProductCategory.values.map((category) {
-                            return DropdownMenuItem(
-                              value: category,
-                              child: Text(
-                                category.name.toUpperCase(),
-                                style: AppStyles.bodyMedium,
-                              ),
-                            );
-                          }).toList(),
-                          onChanged: (ProductCategory? value) {
-                            setState(() => _selectedCategory = value!);
-                          },
-                        ),
+                        color: AppColors.textSecondary,
                       ),
                     ),
                   ],
                 ),
               ),
-            ],
-          ),
-          
-          if (_aiResult != null && _aiResult!.suggestedPrice > 0) ...[
-            const SizedBox(height: AppStyles.spacing12),
-            Container(
-              padding: const EdgeInsets.all(12),
-              decoration: BoxDecoration(
-                color: AppColors.accent.withOpacity(0.1),
-                borderRadius: BorderRadius.circular(AppStyles.radiusMedium),
-                border: Border.all(color: AppColors.accent.withOpacity(0.3)),
-              ),
-              child: Row(
-                children: [
-                  const Icon(Icons.lightbulb, color: AppColors.accent),
-                  const SizedBox(width: 8),
-                  Expanded(
-                    child: Text(
-                      'AI suggests ₹${_aiResult!.suggestedPrice.toStringAsFixed(0)} based on similar products',
-                      style: AppStyles.bodySmall.copyWith(
-                        color: AppColors.textPrimary,
+            )
+          else
+            Expanded(
+              child: Center(
+                child: Column(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  children: [
+                    Icon(
+                      Icons.chat_bubble_outline,
+                      size: 48,
+                      color: AppColors.textSecondary,
+                    ),
+                    const SizedBox(height: 12),
+                    Text(
+                      'Ask me anything about this product!',
+                      style: AppStyles.bodyMedium.copyWith(
+                        color: AppColors.textSecondary,
                       ),
                     ),
+                  ],
+                ),
+              ),
+            ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildQuickQuestion(String question) {
+    return GestureDetector(
+      onTap: () {
+        _askAIQuestion(question);
+      },
+      child: Container(
+        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+        decoration: BoxDecoration(
+          color: AppColors.accent.withOpacity(0.1),
+          borderRadius: BorderRadius.circular(16),
+          border: Border.all(color: AppColors.accent.withOpacity(0.3)),
+        ),
+        child: Text(
+          question,
+          style: AppStyles.bodySmall.copyWith(
+            color: AppColors.accent,
+          ),
+        ),
+      ),
+    );
+  }
+
+  Widget _buildDetailRow(String label, String value) {
+    return Padding(
+      padding: const EdgeInsets.only(bottom: 8),
+      child: Row(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          SizedBox(
+            width: 100,
+            child: Text(
+              '$label:',
+              style: AppStyles.bodyMedium.copyWith(
+                fontWeight: FontWeight.w600,
+                color: AppColors.textSecondary,
+              ),
+            ),
+          ),
+          Expanded(
+            child: Text(
+              value,
+              style: AppStyles.bodyMedium,
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildBottomBar() {
+    return Container(
+      padding: const EdgeInsets.all(16),
+      decoration: BoxDecoration(
+        color: AppColors.surface,
+        boxShadow: [
+          BoxShadow(
+            color: AppColors.cardShadow,
+            blurRadius: 8,
+            offset: const Offset(0, -2),
+          ),
+        ],
+      ),
+      child: SafeArea(
+        child: Row(
+          children: [
+            // Quantity Selector
+            Container(
+              decoration: BoxDecoration(
+                border: Border.all(color: AppColors.border),
+                borderRadius: BorderRadius.circular(8),
+              ),
+              child: Row(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  IconButton(
+                    onPressed: _quantity > 1 ? () {
+                      setState(() {
+                        _quantity--;
+                      });
+                    } : null,
+                    icon: const Icon(Icons.remove),
+                    iconSize: 18,
                   ),
-                  TextButton(
+                  Container(
+                    padding: const EdgeInsets.symmetric(horizontal: 12),
+                    child: Text(
+                      _quantity.toString(),
+                      style: AppStyles.titleMedium,
+                    ),
+                  ),
+                  IconButton(
                     onPressed: () {
-                      _priceController.text = _aiResult!.suggestedPrice.toStringAsFixed(0);
+                      setState(() {
+                        _quantity++;
+                      });
                     },
-                    child: const Text('Apply'),
+                    icon: const Icon(Icons.add),
+                    iconSize: 18,
                   ),
                 ],
               ),
             ),
-          ],
-        ],
-      ),
-    );
-  }
-
-  Widget _buildAIEnhancementSection() {
-    return Container(
-      decoration: AppStyles.cardDecoration.copyWith(
-        boxShadow: [
-          BoxShadow(
-            color: AppColors.accent.withOpacity(0.1),
-            blurRadius: 8,
-            offset: const Offset(0, 2),
-          ),
-        ],
-      ),
-      padding: const EdgeInsets.all(AppStyles.spacing16),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Row(
-            children: [
-              const Icon(Icons.auto_awesome, color: AppColors.accent),
-              const SizedBox(width: 8),
-              Text(
-                'AI Enhancements',
-                style: AppStyles.heading3.copyWith(color: AppColors.accent),
-              ),
-            ],
-          ),
-          const SizedBox(height: AppStyles.spacing12),
-          
-          if (_aiResult != null) ...[
-            Text(
-              'Enhanced Description (Local):',
-              style: AppStyles.bodyMedium.copyWith(fontWeight: FontWeight.w600),
-            ),
-            const SizedBox(height: 4),
-            Text(
-              _aiResult!.localDescription,
-              style: AppStyles.bodySmall.copyWith(
-                color: AppColors.textSecondary,
-                fontStyle: FontStyle.italic,
-              ),
-            ),
             
-            const SizedBox(height: AppStyles.spacing12),
+            const SizedBox(width: 16),
             
-            Text(
-              'Generated Tags:',
-              style: AppStyles.bodyMedium.copyWith(fontWeight: FontWeight.w600),
-            ),
-            const SizedBox(height: 8),
-            Wrap(
-              spacing: 8,
-              runSpacing: 4,
-              children: _tags.map((tag) => Container(
-                padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-                decoration: BoxDecoration(
-                  color: AppColors.primary.withOpacity(0.1),
-                  borderRadius: BorderRadius.circular(12),
-                  border: Border.all(color: AppColors.primary.withOpacity(0.3)),
-                ),
-                child: Text(
-                  tag,
-                  style: AppStyles.bodySmall.copyWith(color: AppColors.primary),
-                ),
-              )).toList(),
+            // Add to Cart Button
+            Expanded(
+              child: PrimaryButton(
+                text: _isInCart ? 'Added to Cart' : 'Add to Cart',
+                onPressed: _isInCart ? null : _addToCart,
+                icon: _isInCart ? Icons.check : Icons.add_shopping_cart,
+              ),
             ),
           ],
-        ],
+        ),
       ),
     );
   }
 
-  Widget _buildCulturalStorySection() {
-    return Container(
-      decoration: AppStyles.cardDecoration,
-      padding: const EdgeInsets.all(AppStyles.spacing16),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Row(
-            children: [
-              const Icon(Icons.auto_stories, color: AppColors.artisanGold),
-              const SizedBox(width: 8),
-              Text(
-                'Cultural Story (Optional)',
-                style: AppStyles.heading3,
-              ),
-            ],
-          ),
-          const SizedBox(height: AppStyles.spacing8),
-          Text(
-            'Share the story behind your creation, cultural significance, or traditional techniques used',
-            style: AppStyles.bodySmall.copyWith(color: AppColors.textSecondary),
-          ),
-          const SizedBox(height: AppStyles.spacing16),
-          
-          CustomTextField(
-            hintText: 'Tell the story of your creation...',
-            controller: _culturalStoryController,
-            maxLines: 4,
-            helperText: 'This helps buyers appreciate the cultural value of your work',
-          ),
-        ],
-      ),
-    );
+  String _formatDate(DateTime date) {
+    final months = [
+      'Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun',
+      'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'
+    ];
+    return '${date.day} ${months[date.month - 1]} ${date.year}';
   }
-
+}
