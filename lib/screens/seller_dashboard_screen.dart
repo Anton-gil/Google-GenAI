@@ -861,7 +861,7 @@ class _SellerDashboardScreenState extends State<SellerDashboardScreen> with Sing
           title: 'Edit Profile',
           subtitle: 'Update your personal information',
           onTap: () {
-            // TODO: Navigate to edit profile
+            
           },
         ),
         _buildProfileActionTile(
@@ -869,7 +869,7 @@ class _SellerDashboardScreenState extends State<SellerDashboardScreen> with Sing
           title: 'Verification Status',
           subtitle: 'View and complete verification steps',
           onTap: () {
-            // TODO: Navigate to verification screen
+            
           },
         ),
         _buildProfileActionTile(
@@ -877,7 +877,7 @@ class _SellerDashboardScreenState extends State<SellerDashboardScreen> with Sing
           title: 'Analytics',
           subtitle: 'View detailed performance metrics',
           onTap: () {
-            // TODO: Navigate to analytics screen
+            
           },
         ),
         _buildProfileActionTile(
@@ -885,7 +885,7 @@ class _SellerDashboardScreenState extends State<SellerDashboardScreen> with Sing
           title: 'Help & Support',
           subtitle: 'Get help with your account',
           onTap: () {
-            // TODO: Navigate to help screen
+            
           },
         ),
         _buildProfileActionTile(

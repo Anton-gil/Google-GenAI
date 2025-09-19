@@ -25,6 +25,10 @@ class _ProfileScreenState extends State<ProfileScreen> {
   @override
   void initState() {
     super.initState();
+    _loadUserProfile();
+  }
+
+  void _loadUserProfile() {
     // Initialize with sample user data - replace with actual user data
     currentUser = User(
       id: '1',
@@ -74,6 +78,43 @@ class _ProfileScreenState extends State<ProfileScreen> {
     );
   }
 
+  void _switchRole() {
+    final newRole = currentUser.role == UserRole.seller ? UserRole.buyer : UserRole.seller;
+    setState(() {
+      currentUser = currentUser.copyWith(role: newRole);
+    });
+    
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(content: Text('Switched to ${newRole.toString().split('.').last} mode')),
+    );
+  }
+
+  void _logout() {
+    showDialog(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: const Text('Logout'),
+        content: const Text('Are you sure you want to logout?'),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context),
+            child: const Text('Cancel'),
+          ),
+          TextButton(
+            onPressed: () {
+              Navigator.pop(context);
+              Navigator.pushReplacementNamed(context, '/login');
+            },
+            child: Text(
+              'Logout',
+              style: TextStyle(color: AppColors.error),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -93,16 +134,10 @@ class _ProfileScreenState extends State<ProfileScreen> {
         padding: const EdgeInsets.all(16),
         child: Column(
           children: [
-            // Profile Header
             _buildProfileHeader(),
             const SizedBox(height: 24),
-            
-            // Profile Details
             _buildProfileForm(),
-            
             const SizedBox(height: 24),
-            
-            // Action Buttons
             if (_isEditing) _buildEditActions(),
             if (!_isEditing) _buildProfileActions(),
           ],
@@ -114,7 +149,6 @@ class _ProfileScreenState extends State<ProfileScreen> {
   Widget _buildProfileHeader() {
     return Column(
       children: [
-        // Profile Picture
         Stack(
           children: [
             CircleAvatar(
@@ -126,8 +160,10 @@ class _ProfileScreenState extends State<ProfileScreen> {
               child: currentUser.profileImageUrl == null
                   ? Text(
                       currentUser.name.isNotEmpty ? currentUser.name[0].toUpperCase() : 'A',
-                      style: AppStyles.headlineLarge.copyWith(
+                      style: const TextStyle(
                         color: AppColors.textOnPrimary,
+                        fontSize: 32,
+                        fontWeight: FontWeight.bold,
                       ),
                     )
                   : null,
@@ -152,18 +188,13 @@ class _ProfileScreenState extends State<ProfileScreen> {
               ),
           ],
         ),
-        
         const SizedBox(height: 16),
-        
-        // User Name and Status
         Text(
           currentUser.name,
           style: AppStyles.headlineMedium,
           textAlign: TextAlign.center,
         ),
-        
         const SizedBox(height: 4),
-        
         Row(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
@@ -175,6 +206,11 @@ class _ProfileScreenState extends State<ProfileScreen> {
             if (currentUser.isVerifiedArtisan)
               _buildStatusChip('VERIFIED ARTISAN', AppColors.artisanGold),
           ],
+        ),
+        const SizedBox(height: 8),
+        Text(
+          'Member since ${_formatDate(currentUser.createdAt)}',
+          style: AppStyles.bodySmall.copyWith(color: AppColors.textSecondary),
         ),
       ],
     );
@@ -206,7 +242,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
         
         CustomTextField(
           controller: _nameController,
-          labelText: 'Full Name',
+          label: 'Full Name',
           enabled: _isEditing,
           prefixIcon: Icons.person,
         ),
@@ -215,7 +251,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
         
         CustomTextField(
           controller: TextEditingController(text: currentUser.email),
-          labelText: 'Email',
+          label: 'Email',
           enabled: false,
           prefixIcon: Icons.email,
         ),
@@ -224,7 +260,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
         
         CustomTextField(
           controller: _phoneController,
-          labelText: 'Phone Number',
+          label: 'Phone Number',
           enabled: _isEditing,
           prefixIcon: Icons.phone,
           keyboardType: TextInputType.phone,
@@ -234,7 +270,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
         
         CustomTextField(
           controller: _addressController,
-          labelText: 'Address',
+          label: 'Address',
           enabled: _isEditing,
           prefixIcon: Icons.location_on,
           maxLines: 2,
@@ -246,11 +282,11 @@ class _ProfileScreenState extends State<ProfileScreen> {
         
         CustomTextField(
           controller: _bioController,
-          labelText: 'Bio / Artisan Story',
+          label: 'Bio / Artisan Story',
           enabled: _isEditing,
           prefixIcon: Icons.info,
           maxLines: 4,
-          hintText: 'Tell buyers about your craft and story...',
+          hint: 'Tell buyers about your craft and story...',
         ),
       ],
     );
@@ -302,19 +338,21 @@ class _ProfileScreenState extends State<ProfileScreen> {
         
         OutlinedCustomButton(
           text: 'Switch to ${currentUser.role == UserRole.seller ? 'Buyer' : 'Seller'} Mode',
-          onPressed: () {
-            // Implement role switching logic
-            ScaffoldMessenger.of(context).showSnackBar(
-              const SnackBar(content: Text('Mode switching coming soon!')),
-            );
-          },
+          onPressed: _switchRole,
           icon: Icons.swap_horiz,
         ),
         
         const SizedBox(height: 24),
         
-        // Additional Options
-        _buildProfileOption(
+        _buildSettingsSection(),
+      ],
+    );
+  }
+
+  Widget _buildSettingsSection() {
+    return Column(
+      children: [
+        _buildSettingsItem(
           'Order History',
           Icons.history,
           () => ScaffoldMessenger.of(context).showSnackBar(
@@ -322,7 +360,15 @@ class _ProfileScreenState extends State<ProfileScreen> {
           ),
         ),
         
-        _buildProfileOption(
+        _buildSettingsItem(
+          'Notifications',
+          Icons.notifications_outlined,
+          () => ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(content: Text('Notification settings coming soon!')),
+          ),
+        ),
+        
+        _buildSettingsItem(
           'Settings',
           Icons.settings,
           () => ScaffoldMessenger.of(context).showSnackBar(
@@ -330,7 +376,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
           ),
         ),
         
-        _buildProfileOption(
+        _buildSettingsItem(
           'Help & Support',
           Icons.help,
           () => ScaffoldMessenger.of(context).showSnackBar(
@@ -338,17 +384,25 @@ class _ProfileScreenState extends State<ProfileScreen> {
           ),
         ),
         
-        _buildProfileOption(
+        _buildSettingsItem(
+          'Privacy Policy',
+          Icons.privacy_tip,
+          () => ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(content: Text('Privacy Policy coming soon!')),
+          ),
+        ),
+        
+        _buildSettingsItem(
           'Logout',
           Icons.logout,
-          () => _showLogoutDialog(),
+          _logout,
           isDestructive: true,
         ),
       ],
     );
   }
 
-  Widget _buildProfileOption(String title, IconData icon, VoidCallback onTap, {bool isDestructive = false}) {
+  Widget _buildSettingsItem(String title, IconData icon, VoidCallback onTap, {bool isDestructive = false}) {
     return Card(
       margin: const EdgeInsets.only(bottom: 8),
       child: ListTile(
@@ -368,30 +422,12 @@ class _ProfileScreenState extends State<ProfileScreen> {
     );
   }
 
-  void _showLogoutDialog() {
-    showDialog(
-      context: context,
-      builder: (context) => AlertDialog(
-        title: const Text('Logout'),
-        content: const Text('Are you sure you want to logout?'),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(context),
-            child: const Text('Cancel'),
-          ),
-          TextButton(
-            onPressed: () {
-              Navigator.pop(context);
-              Navigator.pushReplacementNamed(context, '/login');
-            },
-            child: Text(
-              'Logout',
-              style: TextStyle(color: AppColors.error),
-            ),
-          ),
-        ],
-      ),
-    );
+  String _formatDate(DateTime date) {
+    final months = [
+      'Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun',
+      'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'
+    ];
+    return '${date.day} ${months[date.month - 1]} ${date.year}';
   }
 
   @override
