@@ -1,868 +1,537 @@
-// lib/screens/product_detail_screen.dart
+// lib/screens/register_screen.dart
 import 'package:flutter/material.dart';
-import '../models/product.dart';
+import 'package:flutter/services.dart';
 import '../models/user.dart';
-import '../widgets/custom_button.dart';
+import '../services/auth_service.dart';
 import '../utils/app_colors.dart';
 import '../utils/app_styles.dart';
-import '../services/ai_service.dart';
+import '../widgets/custom_button.dart';
+import '../widgets/custom_textfield.dart';
 
-class ProductDetailScreen extends StatefulWidget {
-  final Product product;
-  
-  const ProductDetailScreen({
-    super.key,
-    required this.product,
-  });
+class RegisterScreen extends StatefulWidget {
+  const RegisterScreen({super.key});
 
   @override
-  State<ProductDetailScreen> createState() => _ProductDetailScreenState();
+  State<RegisterScreen> createState() => _RegisterScreenState();
 }
 
-class _ProductDetailScreenState extends State<ProductDetailScreen> 
-    with SingleTickerProviderStateMixin {
-  late TabController _tabController;
-  final AIService _aiService = AIService();
+class _RegisterScreenState extends State<RegisterScreen> {
+  final _formKey = GlobalKey<FormState>();
+  final _nameController = TextEditingController();
+  final _emailController = TextEditingController();
+  final _phoneController = TextEditingController();
+  final _passwordController = TextEditingController();
+  final _confirmPasswordController = TextEditingController();
+  final _aadhaarController = TextEditingController();
+  final _authService = AuthService();
   
-  bool _isFavorited = false;
-  bool _isInCart = false;
-  int _quantity = 1;
-  String? _chatResponse;
-  bool _isChatLoading = false;
-  final TextEditingController _chatController = TextEditingController();
-  
-  // Mock artisan data - in real app, fetch from backend
-  late User artisan;
-  
-  @override
-  void initState() {
-    super.initState();
-    _tabController = TabController(length: 3, vsync: this);
-    
-    // Mock artisan data
-    artisan = User(
-      id: widget.product.sellerId,
-      name: widget.product.sellerName ?? 'Master Artisan',
-      email: 'artisan@example.com',
-      phone: '+91 9876543210',
-      role: UserRole.seller,
-      verificationStatus: VerificationStatus.verified,
-      address: 'Traditional Craft Village, India',
-      bio: 'Third generation craftsperson specializing in traditional handicrafts',
-      createdAt: DateTime.now().subtract(const Duration(days: 365)),
-      isVerifiedArtisan: true,
-    );
-  }
-  
+  bool _isLoading = false;
+  UserRole _selectedRole = UserRole.buyer;
+  bool _agreeToTerms = false;
+  int _currentStep = 0;
+
   @override
   void dispose() {
-    _tabController.dispose();
-    _chatController.dispose();
+    _nameController.dispose();
+    _emailController.dispose();
+    _phoneController.dispose();
+    _passwordController.dispose();
+    _confirmPasswordController.dispose();
+    _aadhaarController.dispose();
     super.dispose();
   }
 
-  Future<void> _askAIQuestion(String question) async {
-    if (question.trim().isEmpty) return;
-    
-    setState(() {
-      _isChatLoading = true;
-      _chatResponse = null;
-    });
-    
-    try {
-      final response = await _aiService.answerProductQuestion(
-        widget.product,
-        question,
+  Future<void> _register() async {
+    if (!_formKey.currentState!.validate()) return;
+    if (!_agreeToTerms) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('Please agree to the terms and conditions'),
+          backgroundColor: AppColors.error,
+        ),
       );
-      
-      setState(() {
-        _chatResponse = response;
-      });
+      return;
+    }
+
+    setState(() => _isLoading = true);
+
+    try {
+      final result = await _authService.register(
+        name: _nameController.text.trim(),
+        email: _emailController.text.trim(),
+        password: _passwordController.text,
+        phone: _phoneController.text.trim(),
+        role: _selectedRole,
+        aadhaarNumber: _selectedRole == UserRole.seller ? _aadhaarController.text.trim() : null,
+      );
+
+      if (result.success && mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text(result.message ?? 'Registration successful!'),
+            backgroundColor: AppColors.success,
+          ),
+        );
+        
+        Navigator.of(context).pushReplacementNamed('/home');
+      } else if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text(result.message ?? 'Registration failed'),
+            backgroundColor: AppColors.error,
+          ),
+        );
+      }
     } catch (e) {
-      setState(() {
-        _chatResponse = 'Sorry, I couldn\'t answer that question right now. Please try again.';
-      });
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text('An error occurred. Please try again.'),
+            backgroundColor: AppColors.error,
+          ),
+        );
+      }
     } finally {
-      setState(() {
-        _isChatLoading = false;
-      });
+      if (mounted) setState(() => _isLoading = false);
     }
   }
 
-  void _addToCart() {
-    setState(() {
-      _isInCart = true;
-    });
-    
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(
-        content: Text('${widget.product.name} added to cart!'),
-        backgroundColor: AppColors.success,
-        action: SnackBarAction(
-          label: 'View Cart',
-          textColor: AppColors.textOnPrimary,
-          onPressed: () {
-            Navigator.pushNamed(context, '/cart');
-          },
-        ),
-      ),
-    );
+  void _nextStep() {
+    if (_currentStep == 0) {
+      if (_nameController.text.isEmpty || _emailController.text.isEmpty) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('Please fill in all required fields')),
+        );
+        return;
+      }
+    }
+    setState(() => _currentStep++);
   }
 
-  void _toggleFavorite() {
-    setState(() {
-      _isFavorited = !_isFavorited;
-    });
-    
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(
-        content: Text(
-          _isFavorited 
-              ? '${widget.product.name} added to favorites!' 
-              : '${widget.product.name} removed from favorites',
-        ),
-        backgroundColor: _isFavorited ? AppColors.success : AppColors.textSecondary,
-      ),
-    );
-  }
-
-  void _contactArtisan() {
-    showModalBottomSheet(
-      context: context,
-      shape: const RoundedRectangleBorder(
-        borderRadius: BorderRadius.vertical(top: Radius.circular(16)),
-      ),
-      builder: (context) => Container(
-        padding: const EdgeInsets.all(16),
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            Row(
-              children: [
-                CircleAvatar(
-                  radius: 30,
-                  backgroundColor: AppColors.primaryLight,
-                  child: Text(
-                    artisan.name.substring(0, 1).toUpperCase(),
-                    style: const TextStyle(
-                      color: AppColors.textOnPrimary,
-                      fontSize: 24,
-                      fontWeight: FontWeight.bold,
-                    ),
-                  ),
-                ),
-                const SizedBox(width: 16),
-                Expanded(
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Text(
-                        artisan.name,
-                        style: AppStyles.titleLarge,
-                      ),
-                      if (artisan.isVerifiedArtisan)
-                        Row(
-                          children: [
-                            Icon(
-                              Icons.verified,
-                              size: 16,
-                              color: AppColors.artisanGold,
-                            ),
-                            const SizedBox(width: 4),
-                            Text(
-                              'Verified Artisan',
-                              style: AppStyles.bodySmall.copyWith(
-                                color: AppColors.artisanGold,
-                              ),
-                            ),
-                          ],
-                        ),
-                    ],
-                  ),
-                ),
-              ],
-            ),
-            const SizedBox(height: 24),
-            Row(
-              children: [
-                Expanded(
-                  child: OutlinedCustomButton(
-                    text: 'Call',
-                    onPressed: () {
-                      Navigator.pop(context);
-                      ScaffoldMessenger.of(context).showSnackBar(
-                        const SnackBar(content: Text('Calling feature coming soon!')),
-                      );
-                    },
-                    icon: Icons.phone,
-                  ),
-                ),
-                const SizedBox(width: 12),
-                Expanded(
-                  child: PrimaryButton(
-                    text: 'Message',
-                    onPressed: () {
-                      Navigator.pop(context);
-                      ScaffoldMessenger.of(context).showSnackBar(
-                        const SnackBar(content: Text('Messaging feature coming soon!')),
-                      );
-                    },
-                    icon: Icons.message,
-                    isFullWidth: false,
-                  ),
-                ),
-              ],
-            ),
-            const SizedBox(height: 16),
-          ],
-        ),
-      ),
-    );
+  void _previousStep() {
+    if (_currentStep > 0) {
+      setState(() => _currentStep--);
+    }
   }
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
       backgroundColor: AppColors.background,
-      body: CustomScrollView(
-        slivers: [
-          _buildSliverAppBar(),
-          SliverToBoxAdapter(
-            child: Column(
-              children: [
-                _buildProductInfo(),
-                _buildTabSection(),
-              ],
-            ),
-          ),
-        ],
-      ),
-      bottomNavigationBar: _buildBottomBar(),
-    );
-  }
-
-  Widget _buildSliverAppBar() {
-    return SliverAppBar(
-      expandedHeight: 300,
-      floating: false,
-      pinned: true,
-      backgroundColor: AppColors.primary,
-      foregroundColor: AppColors.textOnPrimary,
-      actions: [
-        IconButton(
-          onPressed: _toggleFavorite,
-          icon: Icon(
-            _isFavorited ? Icons.favorite : Icons.favorite_border,
-            color: _isFavorited ? AppColors.error : AppColors.textOnPrimary,
-          ),
-        ),
-        IconButton(
-          onPressed: () {
-            ScaffoldMessenger.of(context).showSnackBar(
-              const SnackBar(content: Text('Share feature coming soon!')),
-            );
-          },
-          icon: const Icon(Icons.share),
-        ),
-      ],
-      flexibleSpace: FlexibleSpaceBar(
-        background: Stack(
-          fit: StackFit.expand,
-          children: [
-            // Product Image
-            widget.product.imageUrls.isNotEmpty
-                ? PageView.builder(
-                    itemCount: widget.product.imageUrls.length,
-                    itemBuilder: (context, index) {
-                      return Image.network(
-                        widget.product.imageUrls[index],
-                        fit: BoxFit.cover,
-                        errorBuilder: (context, error, stackTrace) {
-                          return Container(
-                            color: AppColors.surfaceLight,
-                            child: const Icon(
-                              Icons.image_not_supported,
-                              size: 64,
-                              color: AppColors.textSecondary,
-                            ),
-                          );
-                        },
-                      );
-                    },
-                  )
-                : Container(
-                    color: AppColors.surfaceLight,
-                    child: const Icon(
-                      Icons.image,
-                      size: 64,
-                      color: AppColors.textSecondary,
-                    ),
-                  ),
-            
-            // Gradient overlay
-            Container(
-              decoration: BoxDecoration(
-                gradient: LinearGradient(
-                  begin: Alignment.topCenter,
-                  end: Alignment.bottomCenter,
-                  colors: [
-                    Colors.transparent,
-                    Colors.black.withOpacity(0.3),
-                  ],
-                ),
-              ),
-            ),
-            
-            // Image indicators
-            if (widget.product.imageUrls.length > 1)
-              Positioned(
-                bottom: 16,
-                left: 0,
-                right: 0,
-                child: Row(
-                  mainAxisAlignment: MainAxisAlignment.center,
-                  children: List.generate(
-                    widget.product.imageUrls.length,
-                    (index) => Container(
-                      width: 8,
-                      height: 8,
-                      margin: const EdgeInsets.symmetric(horizontal: 4),
-                      decoration: BoxDecoration(
-                        shape: BoxShape.circle,
-                        color: AppColors.textOnPrimary.withOpacity(0.7),
-                      ),
-                    ),
-                  ),
-                ),
-              ),
-          ],
+      appBar: AppBar(
+        title: const Text('Create Account'),
+        backgroundColor: Colors.transparent,
+        elevation: 0,
+        leading: IconButton(
+          icon: const Icon(Icons.arrow_back, color: AppColors.primary),
+          onPressed: () => Navigator.of(context).pop(),
         ),
       ),
-    );
-  }
-
-  Widget _buildProductInfo() {
-    return Container(
-      color: AppColors.surface,
-      padding: const EdgeInsets.all(16),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          // Product Name and Price
-          Row(
-            crossAxisAlignment: CrossAxisAlignment.start,
+      body: SafeArea(
+        child: Form(
+          key: _formKey,
+          child: Column(
             children: [
+              // Progress Indicator
+              Container(
+                padding: const EdgeInsets.all(16),
+                child: LinearProgressIndicator(
+                  value: (_currentStep + 1) / 3,
+                  backgroundColor: AppColors.border.withOpacity(0.3),
+                  valueColor: const AlwaysStoppedAnimation<Color>(AppColors.primary),
+                ),
+              ),
+              
               Expanded(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
+                child: PageView(
+                  controller: PageController(initialPage: _currentStep),
+                  onPageChanged: (index) => setState(() => _currentStep = index),
                   children: [
-                    Text(
-                      widget.product.name,
-                      style: AppStyles.headlineMedium,
-                    ),
-                    const SizedBox(height: 4),
-                    Text(
-                      widget.product.category.name.toUpperCase(),
-                      style: AppStyles.bodySmall.copyWith(
-                        color: AppColors.primary,
-                        fontWeight: FontWeight.bold,
-                      ),
-                    ),
+                    _buildBasicInfoStep(),
+                    _buildAccountStep(),
+                    _buildVerificationStep(),
                   ],
                 ),
               ),
-              Column(
-                crossAxisAlignment: CrossAxisAlignment.end,
-                children: [
-                  Text(
-                    '₹${widget.product.price.toStringAsFixed(0)}',
-                    style: AppStyles.headlineMedium.copyWith(
-                      color: AppColors.primary,
-                      fontWeight: FontWeight.bold,
-                    ),
-                  ),
-                  if (widget.product.suggestedPrice != null && 
-                      widget.product.suggestedPrice! > widget.product.price)
-                    Text(
-                      '₹${widget.product.suggestedPrice!.toStringAsFixed(0)}',
-                      style: AppStyles.bodySmall.copyWith(
-                        color: AppColors.textSecondary,
-                        decoration: TextDecoration.lineThrough,
+              
+              // Navigation Buttons
+              Container(
+                padding: const EdgeInsets.all(16),
+                child: Row(
+                  children: [
+                    if (_currentStep > 0)
+                      Expanded(
+                        child: OutlinedCustomButton(
+                          text: 'Back',
+                          onPressed: _previousStep,
+                        ),
                       ),
+                    if (_currentStep > 0) const SizedBox(width: 16),
+                    Expanded(
+                      child: _currentStep == 2
+                          ? PrimaryButton(
+                              text: 'Create Account',
+                              onPressed: _register,
+                              isLoading: _isLoading,
+                            )
+                          : PrimaryButton(
+                              text: 'Next',
+                              onPressed: _nextStep,
+                            ),
                     ),
-                ],
+                  ],
+                ),
               ),
             ],
           ),
+        ),
+      ),
+    );
+  }
+
+  Widget _buildBasicInfoStep() {
+    return SingleChildScrollView(
+      padding: const EdgeInsets.all(24),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: [
+          Text(
+            'Basic Information',
+            style: AppStyles.titleLarge.copyWith(color: AppColors.primary),
+          ),
+          const SizedBox(height: 8),
+          Text(
+            'Let\'s start with your basic details',
+            style: AppStyles.bodyMedium,
+          ),
+          const SizedBox(height: 32),
+          
+          CustomTextField(
+            label: 'Full Name',
+            hintText: 'Enter your full name',
+            controller: _nameController,
+            prefixIcon: Icons.person_outline,
+            validator: (value) {
+              if (value == null || value.isEmpty) {
+                return 'Please enter your name';
+              }
+              return null;
+            },
+          ),
           
           const SizedBox(height: 16),
           
-          // Tags
-          if (widget.product.tags.isNotEmpty)
-            Wrap(
-              spacing: 8,
-              runSpacing: 4,
-              children: widget.product.tags.map((tag) => Container(
-                padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-                decoration: BoxDecoration(
-                  color: AppColors.primaryLight.withOpacity(0.1),
-                  borderRadius: BorderRadius.circular(12),
-                  border: Border.all(color: AppColors.primaryLight),
-                ),
-                child: Text(
-                  tag,
-                  style: AppStyles.bodySmall.copyWith(
-                    color: AppColors.primary,
-                  ),
-                ),
-              )).toList(),
-            ),
+          CustomTextField(
+            label: 'Email Address',
+            hintText: 'Enter your email address',
+            controller: _emailController,
+            prefixIcon: Icons.email_outlined,
+            keyboardType: TextInputType.emailAddress,
+            validator: (value) {
+              if (value == null || value.isEmpty) {
+                return 'Please enter your email';
+              }
+              if (!value.contains('@') || !value.contains('.')) {
+                return 'Please enter a valid email address';
+              }
+              return null;
+            },
+          ),
           
           const SizedBox(height: 16),
           
-          // Artisan Info
-          _buildArtisanInfo(),
+          CustomTextField(
+            label: 'Phone Number',
+            hintText: 'Enter your phone number',
+            controller: _phoneController,
+            prefixIcon: Icons.phone_outlined,
+            keyboardType: TextInputType.phone,
+            validator: (value) {
+              if (value == null || value.isEmpty) {
+                return 'Please enter your phone number';
+              }
+              if (value.length < 10) {
+                return 'Please enter a valid phone number';
+              }
+              return null;
+            },
+          ),
+          
+          const SizedBox(height: 24),
+          
+          Text(
+            'I want to:',
+            style: AppStyles.bodyMedium.copyWith(fontWeight: FontWeight.w600),
+          ),
+          
+          const SizedBox(height: 12),
+          
+          ...UserRole.values.map((role) => RadioListTile<UserRole>(
+            title: Text(_getRoleTitle(role)),
+            subtitle: Text(_getRoleSubtitle(role)),
+            value: role,
+            groupValue: _selectedRole,
+            onChanged: (UserRole? value) {
+              setState(() => _selectedRole = value!);
+            },
+            activeColor: AppColors.primary,
+          )),
         ],
       ),
     );
   }
 
-  Widget _buildArtisanInfo() {
-    return Container(
-      padding: const EdgeInsets.all(16),
-      decoration: BoxDecoration(
-        color: AppColors.surfaceLight,
-        borderRadius: BorderRadius.circular(12),
-      ),
-      child: Row(
+  Widget _buildAccountStep() {
+    return SingleChildScrollView(
+      padding: const EdgeInsets.all(24),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
-          CircleAvatar(
-            radius: 24,
-            backgroundColor: AppColors.primaryLight,
-            child: Text(
-              artisan.name.substring(0, 1).toUpperCase(),
-              style: const TextStyle(
-                color: AppColors.textOnPrimary,
-                fontSize: 18,
-                fontWeight: FontWeight.bold,
-              ),
-            ),
+          Text(
+            'Account Security',
+            style: AppStyles.titleLarge.copyWith(color: AppColors.primary),
           ),
-          const SizedBox(width: 12),
-          Expanded(
+          const SizedBox(height: 8),
+          Text(
+            'Create a secure password for your account',
+            style: AppStyles.bodyMedium,
+          ),
+          const SizedBox(height: 32),
+          
+          CustomTextField(
+            label: 'Password',
+            hintText: 'Enter your password',
+            controller: _passwordController,
+            prefixIcon: Icons.lock_outline,
+            obscureText: true,
+            validator: (value) {
+              if (value == null || value.isEmpty) {
+                return 'Please enter a password';
+              }
+              if (value.length < 6) {
+                return 'Password must be at least 6 characters';
+              }
+              return null;
+            },
+          ),
+          
+          const SizedBox(height: 16),
+          
+          CustomTextField(
+            label: 'Confirm Password',
+            hintText: 'Confirm your password',
+            controller: _confirmPasswordController,
+            prefixIcon: Icons.lock_outline,
+            obscureText: true,
+            validator: (value) {
+              if (value == null || value.isEmpty) {
+                return 'Please confirm your password';
+              }
+              if (value != _passwordController.text) {
+                return 'Passwords do not match';
+              }
+              return null;
+            },
+          ),
+          
+          const SizedBox(height: 24),
+          
+          Container(
+            padding: const EdgeInsets.all(16),
+            decoration: BoxDecoration(
+              color: AppColors.info.withOpacity(0.1),
+              borderRadius: BorderRadius.circular(8),
+              border: Border.all(color: AppColors.info.withOpacity(0.3)),
+            ),
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 Row(
                   children: [
+                    const Icon(Icons.security, color: AppColors.info),
+                    const SizedBox(width: 8),
                     Text(
-                      artisan.name,
-                      style: AppStyles.titleMedium,
-                    ),
-                    if (artisan.isVerifiedArtisan) ..[
-                      const SizedBox(width: 4),
-                      Icon(
-                        Icons.verified,
-                        size: 16,
-                        color: AppColors.artisanGold,
+                      'Password Requirements',
+                      style: AppStyles.bodyMedium.copyWith(
+                        fontWeight: FontWeight.w600,
+                        color: AppColors.info,
                       ),
-                    ],
+                    ),
                   ],
                 ),
-                const SizedBox(height: 2),
+                const SizedBox(height: 8),
                 Text(
-                  artisan.address ?? 'Local Artisan',
-                  style: AppStyles.bodySmall.copyWith(
-                    color: AppColors.textSecondary,
-                  ),
+                  '• At least 6 characters long\n• Use a combination of letters and numbers\n• Avoid using personal information',
+                  style: AppStyles.bodySmall.copyWith(color: AppColors.textSecondary),
                 ),
               ],
             ),
           ),
-          OutlinedCustomButton(
-            text: 'Contact',
-            onPressed: _contactArtisan,
-            isFullWidth: false,
-          ),
         ],
       ),
     );
   }
 
-  Widget _buildTabSection() {
-    return Container(
-      color: AppColors.surface,
-      child: Column(
-        children: [
-          TabBar(
-            controller: _tabController,
-            labelColor: AppColors.primary,
-            unselectedLabelColor: AppColors.textSecondary,
-            indicatorColor: AppColors.primary,
-            tabs: const [
-              Tab(text: 'Description'),
-              Tab(text: 'Story'),
-              Tab(text: 'AI Chat'),
-            ],
-          ),
-          SizedBox(
-            height: 400,
-            child: TabBarView(
-              controller: _tabController,
-              children: [
-                _buildDescriptionTab(),
-                _buildStoryTab(),
-                _buildChatTab(),
-              ],
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-
-  Widget _buildDescriptionTab() {
+  Widget _buildVerificationStep() {
     return SingleChildScrollView(
-      padding: const EdgeInsets.all(16),
+      padding: const EdgeInsets.all(24),
       child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
+        crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
           Text(
-            'Product Description',
-            style: AppStyles.titleLarge,
+            'Verification',
+            style: AppStyles.titleLarge.copyWith(color: AppColors.primary),
           ),
-          const SizedBox(height: 12),
+          const SizedBox(height: 8),
           Text(
-            widget.product.description,
+            _selectedRole == UserRole.seller 
+                ? 'Additional verification required for sellers'
+                : 'Almost done! Please review and confirm',
             style: AppStyles.bodyMedium,
-            textAlign: TextAlign.justify,
           ),
+          const SizedBox(height: 32),
           
-          if (widget.product.descriptionLocal.isNotEmpty) ..[
-            const SizedBox(height: 20),
-            Text(
-              'Local Description',
-              style: AppStyles.titleMedium.copyWith(
-                color: AppColors.primary,
-              ),
+          if (_selectedRole == UserRole.seller) ...[
+            CustomTextField(
+              label: 'Aadhaar Number',
+              hintText: 'Enter 12-digit Aadhaar number',
+              controller: _aadhaarController,
+              prefixIcon: Icons.credit_card,
+              keyboardType: TextInputType.number,
+              validator: (value) {
+                if (value == null || value.isEmpty) {
+                  return 'Aadhaar number is required for sellers';
+                }
+                if (value.length != 12) {
+                  return 'Please enter a valid 12-digit Aadhaar number';
+                }
+                return null;
+              },
             ),
-            const SizedBox(height: 8),
-            Container(
-              padding: const EdgeInsets.all(12),
-              decoration: BoxDecoration(
-                color: AppColors.primaryLight.withOpacity(0.1),
-                borderRadius: BorderRadius.circular(8),
-                border: Border.all(
-                  color: AppColors.primaryLight.withOpacity(0.3),
-                ),
-              ),
-              child: Text(
-                widget.product.descriptionLocal,
-                style: AppStyles.bodyMedium.copyWith(
-                  fontStyle: FontStyle.italic,
-                ),
-                textAlign: TextAlign.justify,
-              ),
-            ),
-          ],
-          
-          const SizedBox(height: 20),
-          Text(
-            'Product Details',
-            style: AppStyles.titleMedium,
-          ),
-          const SizedBox(height: 12),
-          
-          _buildDetailRow('Category', widget.product.category.name.toUpperCase()),
-          _buildDetailRow('Created', _formatDate(widget.product.createdAt)),
-          _buildDetailRow('Availability', widget.product.isAvailable ? 'In Stock' : 'Out of Stock'),
-          if (widget.product.tags.isNotEmpty)
-            _buildDetailRow('Tags', widget.product.tags.join(', ')),
-        ],
-      ),
-    );
-  }
-
-  Widget _buildStoryTab() {
-    return SingleChildScrollView(
-      padding: const EdgeInsets.all(16),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Row(
-            children: [
-              Icon(
-                Icons.auto_stories,
-                color: AppColors.artisanGold,
-                size: 28,
-              ),
-              const SizedBox(width: 8),
-              Text(
-                'Artisan Story',
-                style: AppStyles.titleLarge.copyWith(
-                  color: AppColors.artisanGold,
-                ),
-              ),
-            ],
-          ),
-          const SizedBox(height: 16),
-          
-          if (widget.product.culturalStory != null && widget.product.culturalStory!.isNotEmpty)
+            
+            const SizedBox(height: 24),
+            
             Container(
               padding: const EdgeInsets.all(16),
               decoration: BoxDecoration(
-                color: AppColors.artisanGold.withOpacity(0.1),
-                borderRadius: BorderRadius.circular(12),
-                border: Border.all(
-                  color: AppColors.artisanGold.withOpacity(0.3),
-                ),
-              ),
-              child: Text(
-                widget.product.culturalStory!,
-                style: AppStyles.bodyMedium,
-                textAlign: TextAlign.justify,
-              ),
-            )
-          else
-            Container(
-              padding: const EdgeInsets.all(24),
-              decoration: BoxDecoration(
-                color: AppColors.surfaceLight,
-                borderRadius: BorderRadius.circular(12),
+                color: AppColors.warning.withOpacity(0.1),
+                borderRadius: BorderRadius.circular(8),
+                border: Border.all(color: AppColors.warning.withOpacity(0.3)),
               ),
               child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  Icon(
-                    Icons.auto_stories_outlined,
-                    size: 48,
-                    color: AppColors.textSecondary,
+                  Row(
+                    children: [
+                      const Icon(Icons.verified_user, color: AppColors.warning),
+                      const SizedBox(width: 8),
+                      Text(
+                        'Seller Verification Process',
+                        style: AppStyles.bodyMedium.copyWith(
+                          fontWeight: FontWeight.w600,
+                          color: AppColors.warning,
+                        ),
+                      ),
+                    ],
                   ),
-                  const SizedBox(height: 12),
+                  const SizedBox(height: 8),
                   Text(
-                    'The artisan hasn\'t shared a story for this product yet.',
-                    style: AppStyles.bodyMedium.copyWith(
-                      color: AppColors.textSecondary,
-                    ),
-                    textAlign: TextAlign.center,
+                    '• Your account will be reviewed by our team\n• You may be contacted for additional verification\n• This process helps maintain quality and trust',
+                    style: AppStyles.bodySmall.copyWith(color: AppColors.textSecondary),
                   ),
                 ],
               ),
             ),
+          ],
           
-          const SizedBox(height: 24),
+          const SizedBox(height: 32),
           
-          // Artisan Bio
-          Text(
-            'About the Artisan',
-            style: AppStyles.titleMedium,
+          // Terms and Conditions
+          CheckboxListTile(
+            value: _agreeToTerms,
+            onChanged: (bool? value) {
+              setState(() => _agreeToTerms = value ?? false);
+            },
+            title: RichText(
+              text: TextSpan(
+                style: AppStyles.bodyMedium,
+                children: [
+                  const TextSpan(text: 'I agree to the '),
+                  TextSpan(
+                    text: 'Terms & Conditions',
+                    style: AppStyles.bodyMedium.copyWith(
+                      color: AppColors.primary,
+                      decoration: TextDecoration.underline,
+                    ),
+                  ),
+                  const TextSpan(text: ' and '),
+                  TextSpan(
+                    text: 'Privacy Policy',
+                    style: AppStyles.bodyMedium.copyWith(
+                      color: AppColors.primary,
+                      decoration: TextDecoration.underline,
+                    ),
+                  ),
+                ],
+              ),
+            ),
+            activeColor: AppColors.primary,
+            controlAffinity: ListTileControlAffinity.leading,
           ),
-          const SizedBox(height: 12),
-          Text(
-            artisan.bio ?? 'A skilled craftsperson dedicated to traditional techniques.',
-            style: AppStyles.bodyMedium,
-            textAlign: TextAlign.justify,
+          
+          const SizedBox(height: 16),
+          
+          // Account Summary
+          Container(
+            padding: const EdgeInsets.all(16),
+            decoration: BoxDecoration(
+              color: AppColors.surface,
+              borderRadius: BorderRadius.circular(12),
+              boxShadow: [
+                BoxShadow(
+                  color: AppColors.cardShadow,
+                  blurRadius: 8,
+                  offset: const Offset(0, 2),
+                ),
+              ],
+            ),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  'Account Summary',
+                  style: AppStyles.bodyMedium.copyWith(fontWeight: FontWeight.w600),
+                ),
+                const SizedBox(height: 12),
+                _buildSummaryRow('Name', _nameController.text),
+                _buildSummaryRow('Email', _emailController.text),
+                _buildSummaryRow('Phone', _phoneController.text),
+                _buildSummaryRow('Role', _getRoleTitle(_selectedRole)),
+              ],
+            ),
           ),
         ],
       ),
     );
   }
 
-  Widget _buildChatTab() {
-    return Container(
-      padding: const EdgeInsets.all(16),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Row(
-            children: [
-              Icon(
-                Icons.smart_toy,
-                color: AppColors.accent,
-                size: 24,
-              ),
-              const SizedBox(width: 8),
-              Text(
-                'Ask AI about this product',
-                style: AppStyles.titleMedium.copyWith(
-                  color: AppColors.accent,
-                ),
-              ),
-            ],
-          ),
-          const SizedBox(height: 8),
-          Text(
-            'Get instant answers about the product, care instructions, or cultural significance',
-            style: AppStyles.bodySmall.copyWith(
-              color: AppColors.textSecondary,
-            ),
-          ),
-          const SizedBox(height: 16),
-          
-          // Quick Questions
-          Wrap(
-            spacing: 8,
-            runSpacing: 8,
-            children: [
-              _buildQuickQuestion('How is this made?'),
-              _buildQuickQuestion('Care instructions?'),
-              _buildQuickQuestion('Cultural significance?'),
-              _buildQuickQuestion('Similar products?'),
-            ],
-          ),
-          
-          const SizedBox(height: 16),
-          
-          // Chat Input
-          Row(
-            children: [
-              Expanded(
-                child: TextField(
-                  controller: _chatController,
-                  decoration: InputDecoration(
-                    hintText: 'Ask anything about this product...',
-                    border: OutlineInputBorder(
-                      borderRadius: BorderRadius.circular(12),
-                    ),
-                    contentPadding: const EdgeInsets.symmetric(
-                      horizontal: 16,
-                      vertical: 12,
-                    ),
-                  ),
-                  onSubmitted: (value) {
-                    if (value.trim().isNotEmpty) {
-                      _askAIQuestion(value);
-                      _chatController.clear();
-                    }
-                  },
-                ),
-              ),
-              const SizedBox(width: 8),
-              IconButton(
-                onPressed: _isChatLoading ? null : () {
-                  if (_chatController.text.trim().isNotEmpty) {
-                    _askAIQuestion(_chatController.text);
-                    _chatController.clear();
-                  }
-                },
-                icon: _isChatLoading 
-                    ? const SizedBox(
-                        width: 20,
-                        height: 20,
-                        child: CircularProgressIndicator(strokeWidth: 2),
-                      )
-                    : const Icon(Icons.send),
-                color: AppColors.primary,
-              ),
-            ],
-          ),
-          
-          const SizedBox(height: 16),
-          
-          // Chat Response
-          if (_chatResponse != null)
-            Expanded(
-              child: Container(
-                width: double.infinity,
-                padding: const EdgeInsets.all(16),
-                decoration: BoxDecoration(
-                  color: AppColors.surfaceLight,
-                  borderRadius: BorderRadius.circular(12),
-                ),
-                child: SingleChildScrollView(
-                  child: Text(
-                    _chatResponse!,
-                    style: AppStyles.bodyMedium,
-                  ),
-                ),
-              ),
-            )
-          else if (_isChatLoading)
-            Expanded(
-              child: Center(
-                child: Column(
-                  mainAxisAlignment: MainAxisAlignment.center,
-                  children: [
-                    const CircularProgressIndicator(),
-                    const SizedBox(height: 16),
-                    Text(
-                      'AI is thinking...',
-                      style: AppStyles.bodyMedium.copyWith(
-                        color: AppColors.textSecondary,
-                      ),
-                    ),
-                  ],
-                ),
-              ),
-            )
-          else
-            Expanded(
-              child: Center(
-                child: Column(
-                  mainAxisAlignment: MainAxisAlignment.center,
-                  children: [
-                    Icon(
-                      Icons.chat_bubble_outline,
-                      size: 48,
-                      color: AppColors.textSecondary,
-                    ),
-                    const SizedBox(height: 12),
-                    Text(
-                      'Ask me anything about this product!',
-                      style: AppStyles.bodyMedium.copyWith(
-                        color: AppColors.textSecondary,
-                      ),
-                    ),
-                  ],
-                ),
-              ),
-            ),
-        ],
-      ),
-    );
-  }
-
-  Widget _buildQuickQuestion(String question) {
-    return GestureDetector(
-      onTap: () {
-        _askAIQuestion(question);
-      },
-      child: Container(
-        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
-        decoration: BoxDecoration(
-          color: AppColors.accent.withOpacity(0.1),
-          borderRadius: BorderRadius.circular(16),
-          border: Border.all(color: AppColors.accent.withOpacity(0.3)),
-        ),
-        child: Text(
-          question,
-          style: AppStyles.bodySmall.copyWith(
-            color: AppColors.accent,
-          ),
-        ),
-      ),
-    );
-  }
-
-  Widget _buildDetailRow(String label, String value) {
+  Widget _buildSummaryRow(String label, String value) {
     return Padding(
-      padding: const EdgeInsets.only(bottom: 8),
+      padding: const EdgeInsets.symmetric(vertical: 4),
       child: Row(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           SizedBox(
-            width: 100,
+            width: 80,
             child: Text(
               '$label:',
-              style: AppStyles.bodyMedium.copyWith(
-                fontWeight: FontWeight.w600,
-                color: AppColors.textSecondary,
-              ),
+              style: AppStyles.bodySmall.copyWith(color: AppColors.textSecondary),
             ),
           ),
           Expanded(
             child: Text(
-              value,
-              style: AppStyles.bodyMedium,
+              value.isEmpty ? 'Not provided' : value,
+              style: AppStyles.bodySmall,
             ),
           ),
         ],
@@ -870,81 +539,25 @@ class _ProductDetailScreenState extends State<ProductDetailScreen>
     );
   }
 
-  Widget _buildBottomBar() {
-    return Container(
-      padding: const EdgeInsets.all(16),
-      decoration: BoxDecoration(
-        color: AppColors.surface,
-        boxShadow: [
-          BoxShadow(
-            color: AppColors.cardShadow,
-            blurRadius: 8,
-            offset: const Offset(0, -2),
-          ),
-        ],
-      ),
-      child: SafeArea(
-        child: Row(
-          children: [
-            // Quantity Selector
-            Container(
-              decoration: BoxDecoration(
-                border: Border.all(color: AppColors.border),
-                borderRadius: BorderRadius.circular(8),
-              ),
-              child: Row(
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  IconButton(
-                    onPressed: _quantity > 1 ? () {
-                      setState(() {
-                        _quantity--;
-                      });
-                    } : null,
-                    icon: const Icon(Icons.remove),
-                    iconSize: 18,
-                  ),
-                  Container(
-                    padding: const EdgeInsets.symmetric(horizontal: 12),
-                    child: Text(
-                      _quantity.toString(),
-                      style: AppStyles.titleMedium,
-                    ),
-                  ),
-                  IconButton(
-                    onPressed: () {
-                      setState(() {
-                        _quantity++;
-                      });
-                    },
-                    icon: const Icon(Icons.add),
-                    iconSize: 18,
-                  ),
-                ],
-              ),
-            ),
-            
-            const SizedBox(width: 16),
-            
-            // Add to Cart Button
-            Expanded(
-              child: PrimaryButton(
-                text: _isInCart ? 'Added to Cart' : 'Add to Cart',
-                onPressed: _isInCart ? null : _addToCart,
-                icon: _isInCart ? Icons.check : Icons.add_shopping_cart,
-              ),
-            ),
-          ],
-        ),
-      ),
-    );
+  String _getRoleTitle(UserRole role) {
+    switch (role) {
+      case UserRole.buyer:
+        return 'Buy handmade products';
+      case UserRole.seller:
+        return 'Sell my creations';
+      case UserRole.both:
+        return 'Buy and sell products';
+    }
   }
 
-  String _formatDate(DateTime date) {
-    final months = [
-      'Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun',
-      'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'
-    ];
-    return '${date.day} ${months[date.month - 1]} ${date.year}';
+  String _getRoleSubtitle(UserRole role) {
+    switch (role) {
+      case UserRole.buyer:
+        return 'Discover and purchase unique artisan products';
+      case UserRole.seller:
+        return 'List and sell your handmade items';
+      case UserRole.both:
+        return 'Full marketplace access as buyer and seller';
+    }
   }
 }

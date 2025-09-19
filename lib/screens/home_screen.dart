@@ -1,4 +1,4 @@
-// lib/screens/home_screen.dart (Enhanced Version)
+// lib/screens/home_screen.dart
 import 'package:flutter/material.dart';
 import '../models/product.dart';
 import '../models/user.dart';
@@ -11,6 +11,7 @@ import '../widgets/custom_textfield.dart';
 import 'login_screen.dart';
 import 'seller_dashboard_screen.dart';
 import 'chat_screen.dart';
+// import 'product_detail_screen.dart'; // Temporarily commented out
 
 class HomeScreen extends StatefulWidget {
   const HomeScreen({super.key});
@@ -50,108 +51,80 @@ class _HomeScreenState extends State<HomeScreen> {
       Product(
         id: "1",
         name: "Handmade Pottery Vase",
-        description: "Beautiful ceramic vase with intricate traditional patterns. Made using time-honored techniques passed down through generations.",
-        descriptionLocal: "पारंपरिक भारतीय मिट्टी के बर्तनों की कलाकृति। हाथ से बनाया गया अनूठा फूलदान।",
+        description: "Beautiful ceramic vase with intricate traditional patterns.",
+        descriptionLocal: "पारंपरिक भारतीय मिट्टी के बर्तनों की कलाकृति।",
         imageUrl: "https://picsum.photos/400/400?pottery",
+        imageUrls: const ["https://picsum.photos/400/400?pottery"],
         price: 650,
         suggestedPrice: 700,
         sellerId: "seller1",
         sellerName: "Ramesh Kumar",
         category: ProductCategory.pottery,
-        tags: ["handmade", "pottery", "traditional", "ceramic"],
+        tags: const ["handmade", "pottery", "traditional", "ceramic"],
         createdAt: DateTime.now().subtract(const Duration(days: 2)),
         updatedAt: DateTime.now().subtract(const Duration(hours: 6)),
-        viewCount: 234,
-        rating: 4.7,
-        reviewCount: 18,
         culturalStory: "This pottery style has been practiced in our village for over 300 years...",
       ),
       Product(
         id: "2",
         name: "Embroidered Silk Dupatta",
-        description: "Exquisite handwoven silk dupatta featuring traditional embroidery and vibrant colors. Perfect for special occasions.",
-        descriptionLocal: "सुंदर हाथ से बुना गया रेशमी दुपट्टा। पारंपरिक कढ़ाई के साथ।",
+        description: "Exquisite handwoven silk dupatta featuring traditional embroidery.",
+        descriptionLocal: "सुंदर हाथ से बुना गया रेशमी दुपट्टा।",
         imageUrl: "https://picsum.photos/400/400?silk",
+        imageUrls: const ["https://picsum.photos/400/400?silk"],
         price: 1200,
         sellerId: "seller2",
         sellerName: "Meera Devi",
         category: ProductCategory.textiles,
-        tags: ["silk", "embroidered", "dupatta", "traditional"],
+        tags: const ["silk", "embroidered", "dupatta", "traditional"],
         createdAt: DateTime.now().subtract(const Duration(days: 1)),
         updatedAt: DateTime.now().subtract(const Duration(hours: 2)),
-        viewCount: 156,
-        rating: 4.9,
-        reviewCount: 24,
       ),
       Product(
         id: "3",
         name: "Brass Handicraft Bowl",
-        description: "Elegant brass bowl with intricate engravings. Perfect for home decoration or religious ceremonies.",
-        descriptionLocal: "पीतल का सुंदर कटोरा। धार्मिक अनुष्ठानों के लिए आदर्श।",
+        description: "Elegant brass bowl with intricate engravings.",
+        descriptionLocal: "पीतल का सुंदर कटोरा।",
         imageUrl: "https://picsum.photos/400/400?brass",
+        imageUrls: const ["https://picsum.photos/400/400?brass"],
         price: 450,
         suggestedPrice: 500,
         sellerId: "seller3",
         sellerName: "Vikash Singh",
         category: ProductCategory.metalwork,
-        tags: ["brass", "handicraft", "bowl", "religious"],
+        tags: const ["brass", "handicraft", "bowl", "religious"],
         createdAt: DateTime.now().subtract(const Duration(days: 3)),
         updatedAt: DateTime.now().subtract(const Duration(days: 1)),
-        viewCount: 89,
-        rating: 4.5,
-        reviewCount: 12,
       ),
       Product(
         id: "4",
         name: "Wooden Elephant Sculpture",
-        description: "Masterfully carved wooden elephant showcasing traditional Indian woodworking techniques.",
-        descriptionLocal: "लकड़ी का हाथी की मूर्ति। पारंपरिक नक्काशी की कलाकृति।",
+        description: "Masterfully carved wooden elephant showcasing traditional techniques.",
+        descriptionLocal: "लकड़ी का हाथी की मूर्ति।",
         imageUrl: "https://picsum.photos/400/400?wood",
+        imageUrls: const ["https://picsum.photos/400/400?wood"],
         price: 800,
         sellerId: "seller4",
         sellerName: "Arjun Sharma",
         category: ProductCategory.woodwork,
-        tags: ["wood", "elephant", "sculpture", "carved"],
+        tags: const ["wood", "elephant", "sculpture", "carved"],
         createdAt: DateTime.now().subtract(const Duration(days: 5)),
         updatedAt: DateTime.now().subtract(const Duration(days: 3)),
-        viewCount: 345,
-        rating: 4.8,
-        reviewCount: 31,
       ),
       Product(
         id: "5",
         name: "Silver Oxidized Necklace",
-        description: "Beautiful handcrafted silver necklace with traditional oxidized finish and cultural motifs.",
-        descriptionLocal: "चांदी का हस्तनिर्मित हार। पारंपरिक डिजाइन के साथ।",
+        description: "Beautiful handcrafted silver necklace with traditional finish.",
+        descriptionLocal: "चांदी का हस्तनिर्मित हार।",
         imageUrl: "https://picsum.photos/400/400?jewelry",
+        imageUrls: const ["https://picsum.photos/400/400?jewelry"],
         price: 1500,
         sellerId: "seller5",
         sellerName: "Priya Jewels",
         category: ProductCategory.jewelry,
-        tags: ["silver", "necklace", "oxidized", "traditional"],
+        tags: const ["silver", "necklace", "oxidized", "traditional"],
         createdAt: DateTime.now().subtract(const Duration(hours: 12)),
         updatedAt: DateTime.now().subtract(const Duration(hours: 4)),
-        viewCount: 78,
-        rating: 4.6,
-        reviewCount: 9,
-      ),
-      Product(
-        id: "6",
-        name: "Madhubani Painting",
-        description: "Authentic Madhubani painting on handmade paper, depicting traditional Bihar folk art.",
-        descriptionLocal: "मधुबनी चित्रकला। बिहार की पारंपरिक लोक कला।",
-        imageUrl: "https://picsum.photos/400/400?painting",
-        price: 2000,
-        suggestedPrice: 1800,
-        sellerId: "seller6",
-        sellerName: "Sunita Kumari",
-        category: ProductCategory.painting,
-        tags: ["madhubani", "painting", "folk art", "bihar"],
-        createdAt: DateTime.now().subtract(const Duration(days: 7)),
-        updatedAt: DateTime.now().subtract(const Duration(days: 2)),
-        viewCount: 267,
-        rating: 4.9,
-        reviewCount: 22,
       ),
     ];
     
@@ -242,13 +215,8 @@ class _HomeScreenState extends State<HomeScreen> {
           ? const Center(child: CircularProgressIndicator())
           : Column(
               children: [
-                // Search and Filter Section
                 _buildSearchAndFilter(),
-                
-                // Category Filter
                 _buildCategoryFilter(),
-                
-                // Products Grid
                 Expanded(
                   child: _filteredProducts.isEmpty
                       ? _buildEmptyState()
@@ -278,9 +246,10 @@ class _HomeScreenState extends State<HomeScreen> {
       child: Row(
         children: [
           Expanded(
-            child: SearchTextField(
+            child: CustomTextField(
               controller: _searchController,
               hintText: 'Search products, artisans...',
+              prefixIcon: Icons.search,
               onChanged: _onSearchChanged,
             ),
           ),
@@ -291,9 +260,7 @@ class _HomeScreenState extends State<HomeScreen> {
               borderRadius: BorderRadius.circular(12),
             ),
             child: IconButton(
-              onPressed: () {
-                _showFilterDialog();
-              },
+              onPressed: _showFilterDialog,
               icon: const Icon(
                 Icons.tune,
                 color: AppColors.textOnPrimary,
@@ -313,9 +280,8 @@ class _HomeScreenState extends State<HomeScreen> {
         scrollDirection: Axis.horizontal,
         children: [
           _buildCategoryChip('All', null),
-          ...ProductCategory.values.map((category) => 
-            _buildCategoryChip(category.name.toUpperCase(), category)
-          ),
+          for (ProductCategory category in ProductCategory.values)
+            _buildCategoryChip(category.name.toUpperCase(), category),
         ],
       ),
     );
@@ -434,30 +400,8 @@ class _HomeScreenState extends State<HomeScreen> {
             ),
             const SizedBox(height: 20),
             
-            // Price Range Filter
             const Text(
               'Price Range',
-              style: TextStyle(
-                fontSize: 16,
-                fontWeight: FontWeight.w600,
-              ),
-            ),
-            const SizedBox(height: 10),
-            Row(
-              children: [
-                _buildPriceRangeChip('Under ₹500'),
-                const SizedBox(width: 8),
-                _buildPriceRangeChip('₹500 - ₹1000'),
-                const SizedBox(width: 8),
-                _buildPriceRangeChip('Above ₹1000'),
-              ],
-            ),
-            
-            const SizedBox(height: 20),
-            
-            // Rating Filter
-            const Text(
-              'Rating',
               style: TextStyle(
                 fontSize: 16,
                 fontWeight: FontWeight.w600,
@@ -467,22 +411,24 @@ class _HomeScreenState extends State<HomeScreen> {
             Wrap(
               spacing: 8,
               children: [
-                _buildRatingChip('4+ Stars'),
-                _buildRatingChip('3+ Stars'),
-                _buildRatingChip('Any Rating'),
+                _buildPriceRangeChip('Under ₹500'),
+                _buildPriceRangeChip('₹500 - ₹1000'),
+                _buildPriceRangeChip('Above ₹1000'),
               ],
             ),
             
             const SizedBox(height: 30),
             
-            // Apply Button
             SizedBox(
               width: double.infinity,
               child: ElevatedButton(
                 onPressed: () {
                   Navigator.pop(context);
-                  // Apply filters here
                 },
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: AppColors.primary,
+                  foregroundColor: AppColors.textOnPrimary,
+                ),
                 child: const Text('Apply Filters'),
               ),
             ),
@@ -497,17 +443,9 @@ class _HomeScreenState extends State<HomeScreen> {
       label: Text(label),
       onSelected: (selected) {
         // TODO: Implement price range filter
-      },
-      backgroundColor: AppColors.surface,
-      side: const BorderSide(color: AppColors.border),
-    );
-  }
-
-  Widget _buildRatingChip(String label) {
-    return FilterChip(
-      label: Text(label),
-      onSelected: (selected) {
-        // TODO: Implement rating filter
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('Filter: $label - Coming soon!')),
+        );
       },
       backgroundColor: AppColors.surface,
       side: const BorderSide(color: AppColors.border),
@@ -515,13 +453,20 @@ class _HomeScreenState extends State<HomeScreen> {
   }
 
   void _navigateToProductDetail(Product product) {
-    // TODO: Navigate to product detail screen
+    // Temporary - just show a snackbar until ProductDetailScreen is working
     ScaffoldMessenger.of(context).showSnackBar(
       SnackBar(
         content: Text('Opening ${product.name}...'),
         duration: const Duration(seconds: 1),
       ),
     );
+    
+    // TODO: Uncomment when ProductDetailScreen is ready
+    // Navigator.of(context).push(
+    //   MaterialPageRoute(
+    //     builder: (context) => ProductDetailScreen(product: product),
+    //   ),
+    // );
   }
 }
 
@@ -624,37 +569,6 @@ class EnhancedProductCard extends StatelessWidget {
                       ),
                     ),
                   
-                  // View Count
-                  Positioned(
-                    top: 8,
-                    right: 8,
-                    child: Container(
-                      padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
-                      decoration: BoxDecoration(
-                        color: Colors.black.withOpacity(0.6),
-                        borderRadius: BorderRadius.circular(8),
-                      ),
-                      child: Row(
-                        mainAxisSize: MainAxisSize.min,
-                        children: [
-                          const Icon(
-                            Icons.visibility,
-                            color: Colors.white,
-                            size: 10,
-                          ),
-                          const SizedBox(width: 2),
-                          Text(
-                            '${product.viewCount}',
-                            style: const TextStyle(
-                              color: Colors.white,
-                              fontSize: 8,
-                            ),
-                          ),
-                        ],
-                      ),
-                    ),
-                  ),
-                  
                   // Category Badge
                   Positioned(
                     bottom: 8,
@@ -703,7 +617,7 @@ class EnhancedProductCard extends StatelessWidget {
                     
                     // Seller Name
                     Text(
-                      'by ${product.sellerName}',
+                      'by ${product.sellerName ?? 'Unknown'}',
                       style: const TextStyle(
                         fontSize: 11,
                         color: AppColors.textSecondary,
@@ -715,54 +629,27 @@ class EnhancedProductCard extends StatelessWidget {
                     
                     const Spacer(),
                     
-                    // Rating and Reviews
+                    // Price
                     Row(
                       children: [
-                        const Icon(
-                          Icons.star,
-                          color: AppColors.artisanGold,
-                          size: 14,
-                        ),
-                        const SizedBox(width: 2),
                         Text(
-                          product.rating.toStringAsFixed(1),
+                          product.formattedPrice,
                           style: const TextStyle(
-                            fontSize: 12,
-                            fontWeight: FontWeight.w600,
-                          ),
-                        ),
-                        Text(
-                          ' (${product.reviewCount})',
-                          style: const TextStyle(
-                            fontSize: 10,
-                            color: AppColors.textSecondary,
+                            color: AppColors.primary,
+                            fontWeight: FontWeight.bold,
+                            fontSize: 16,
                           ),
                         ),
                         const Spacer(),
-                        
-                        // Price
-                        Column(
-                          crossAxisAlignment: CrossAxisAlignment.end,
-                          children: [
-                            Text(
-                              product.formattedPrice,
-                              style: const TextStyle(
-                                color: AppColors.primary,
-                                fontWeight: FontWeight.bold,
-                                fontSize: 16,
-                              ),
+                        if (product.hasPriceDifference)
+                          Text(
+                            product.formattedSuggestedPrice,
+                            style: const TextStyle(
+                              color: AppColors.textHint,
+                              fontSize: 10,
+                              decoration: TextDecoration.lineThrough,
                             ),
-                            if (product.hasPriceDifference)
-                              Text(
-                                product.formattedSuggestedPrice,
-                                style: const TextStyle(
-                                  color: AppColors.textHint,
-                                  fontSize: 10,
-                                  decoration: TextDecoration.lineThrough,
-                                ),
-                              ),
-                          ],
-                        ),
+                          ),
                       ],
                     ),
                   ],

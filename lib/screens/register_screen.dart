@@ -66,7 +66,6 @@ class _RegisterScreenState extends State<RegisterScreen> {
       );
 
       if (result.success && mounted) {
-        // Show success message
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
             content: Text(result.message ?? 'Registration successful!'),
@@ -74,7 +73,6 @@ class _RegisterScreenState extends State<RegisterScreen> {
           ),
         );
         
-        // Navigate to verification or home
         Navigator.of(context).pushReplacementNamed('/home');
       } else if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
@@ -136,7 +134,7 @@ class _RegisterScreenState extends State<RegisterScreen> {
             children: [
               // Progress Indicator
               Container(
-                padding: const EdgeInsets.all(AppStyles.spacing16),
+                padding: const EdgeInsets.all(16),
                 child: LinearProgressIndicator(
                   value: (_currentStep + 1) / 3,
                   backgroundColor: AppColors.border.withOpacity(0.3),
@@ -158,7 +156,7 @@ class _RegisterScreenState extends State<RegisterScreen> {
               
               // Navigation Buttons
               Container(
-                padding: const EdgeInsets.all(AppStyles.spacing16),
+                padding: const EdgeInsets.all(16),
                 child: Row(
                   children: [
                     if (_currentStep > 0)
@@ -193,27 +191,26 @@ class _RegisterScreenState extends State<RegisterScreen> {
 
   Widget _buildBasicInfoStep() {
     return SingleChildScrollView(
-      padding: const EdgeInsets.all(AppStyles.spacing24),
+      padding: const EdgeInsets.all(24),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
           Text(
             'Basic Information',
-            style: AppStyles.heading2.copyWith(color: AppColors.primary),
+            style: AppStyles.titleLarge.copyWith(color: AppColors.primary),
           ),
-          const SizedBox(height: AppStyles.spacing8),
+          const SizedBox(height: 8),
           Text(
             'Let\'s start with your basic details',
             style: AppStyles.bodyMedium,
           ),
-          const SizedBox(height: AppStyles.spacing32),
+          const SizedBox(height: 32),
           
           CustomTextField(
             label: 'Full Name',
             hintText: 'Enter your full name',
             controller: _nameController,
             prefixIcon: Icons.person_outline,
-            textCapitalization: TextCapitalization.words,
             validator: (value) {
               if (value == null || value.isEmpty) {
                 return 'Please enter your name';
@@ -222,22 +219,52 @@ class _RegisterScreenState extends State<RegisterScreen> {
             },
           ),
           
-          const SizedBox(height: AppStyles.spacing16),
+          const SizedBox(height: 16),
           
-          EmailTextField(controller: _emailController),
+          CustomTextField(
+            label: 'Email Address',
+            hintText: 'Enter your email address',
+            controller: _emailController,
+            prefixIcon: Icons.email_outlined,
+            keyboardType: TextInputType.emailAddress,
+            validator: (value) {
+              if (value == null || value.isEmpty) {
+                return 'Please enter your email';
+              }
+              if (!value.contains('@') || !value.contains('.')) {
+                return 'Please enter a valid email address';
+              }
+              return null;
+            },
+          ),
           
-          const SizedBox(height: AppStyles.spacing16),
+          const SizedBox(height: 16),
           
-          PhoneTextField(controller: _phoneController),
+          CustomTextField(
+            label: 'Phone Number',
+            hintText: 'Enter your phone number',
+            controller: _phoneController,
+            prefixIcon: Icons.phone_outlined,
+            keyboardType: TextInputType.phone,
+            validator: (value) {
+              if (value == null || value.isEmpty) {
+                return 'Please enter your phone number';
+              }
+              if (value.length < 10) {
+                return 'Please enter a valid phone number';
+              }
+              return null;
+            },
+          ),
           
-          const SizedBox(height: AppStyles.spacing24),
+          const SizedBox(height: 24),
           
           Text(
             'I want to:',
             style: AppStyles.bodyMedium.copyWith(fontWeight: FontWeight.w600),
           ),
           
-          const SizedBox(height: AppStyles.spacing12),
+          const SizedBox(height: 12),
           
           ...UserRole.values.map((role) => RadioListTile<UserRole>(
             title: Text(_getRoleTitle(role)),
@@ -256,23 +283,27 @@ class _RegisterScreenState extends State<RegisterScreen> {
 
   Widget _buildAccountStep() {
     return SingleChildScrollView(
-      padding: const EdgeInsets.all(AppStyles.spacing24),
+      padding: const EdgeInsets.all(24),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
           Text(
             'Account Security',
-            style: AppStyles.heading2.copyWith(color: AppColors.primary),
+            style: AppStyles.titleLarge.copyWith(color: AppColors.primary),
           ),
-          const SizedBox(height: AppStyles.spacing8),
+          const SizedBox(height: 8),
           Text(
             'Create a secure password for your account',
             style: AppStyles.bodyMedium,
           ),
-          const SizedBox(height: AppStyles.spacing32),
+          const SizedBox(height: 32),
           
-          PasswordTextField(
+          CustomTextField(
+            label: 'Password',
+            hintText: 'Enter your password',
             controller: _passwordController,
+            prefixIcon: Icons.lock_outline,
+            obscureText: true,
             validator: (value) {
               if (value == null || value.isEmpty) {
                 return 'Please enter a password';
@@ -284,11 +315,14 @@ class _RegisterScreenState extends State<RegisterScreen> {
             },
           ),
           
-          const SizedBox(height: AppStyles.spacing16),
+          const SizedBox(height: 16),
           
-          PasswordTextField(
+          CustomTextField(
             label: 'Confirm Password',
+            hintText: 'Confirm your password',
             controller: _confirmPasswordController,
+            prefixIcon: Icons.lock_outline,
+            obscureText: true,
             validator: (value) {
               if (value == null || value.isEmpty) {
                 return 'Please confirm your password';
@@ -300,13 +334,13 @@ class _RegisterScreenState extends State<RegisterScreen> {
             },
           ),
           
-          const SizedBox(height: AppStyles.spacing24),
+          const SizedBox(height: 24),
           
           Container(
-            padding: const EdgeInsets.all(AppStyles.spacing16),
+            padding: const EdgeInsets.all(16),
             decoration: BoxDecoration(
               color: AppColors.info.withOpacity(0.1),
-              borderRadius: BorderRadius.circular(AppStyles.radiusMedium),
+              borderRadius: BorderRadius.circular(8),
               border: Border.all(color: AppColors.info.withOpacity(0.3)),
             ),
             child: Column(
@@ -340,22 +374,22 @@ class _RegisterScreenState extends State<RegisterScreen> {
 
   Widget _buildVerificationStep() {
     return SingleChildScrollView(
-      padding: const EdgeInsets.all(AppStyles.spacing24),
+      padding: const EdgeInsets.all(24),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
           Text(
             'Verification',
-            style: AppStyles.heading2.copyWith(color: AppColors.primary),
+            style: AppStyles.titleLarge.copyWith(color: AppColors.primary),
           ),
-          const SizedBox(height: AppStyles.spacing8),
+          const SizedBox(height: 8),
           Text(
             _selectedRole == UserRole.seller 
                 ? 'Additional verification required for sellers'
                 : 'Almost done! Please review and confirm',
             style: AppStyles.bodyMedium,
           ),
-          const SizedBox(height: AppStyles.spacing32),
+          const SizedBox(height: 32),
           
           if (_selectedRole == UserRole.seller) ...[
             CustomTextField(
@@ -364,10 +398,6 @@ class _RegisterScreenState extends State<RegisterScreen> {
               controller: _aadhaarController,
               prefixIcon: Icons.credit_card,
               keyboardType: TextInputType.number,
-              inputFormatters: [
-                FilteringTextInputFormatter.digitsOnly,
-                LengthLimitingTextInputFormatter(12),
-              ],
               validator: (value) {
                 if (value == null || value.isEmpty) {
                   return 'Aadhaar number is required for sellers';
@@ -379,13 +409,13 @@ class _RegisterScreenState extends State<RegisterScreen> {
               },
             ),
             
-            const SizedBox(height: AppStyles.spacing24),
+            const SizedBox(height: 24),
             
             Container(
-              padding: const EdgeInsets.all(AppStyles.spacing16),
+              padding: const EdgeInsets.all(16),
               decoration: BoxDecoration(
                 color: AppColors.warning.withOpacity(0.1),
-                borderRadius: BorderRadius.circular(AppStyles.radiusMedium),
+                borderRadius: BorderRadius.circular(8),
                 border: Border.all(color: AppColors.warning.withOpacity(0.3)),
               ),
               child: Column(
@@ -414,7 +444,7 @@ class _RegisterScreenState extends State<RegisterScreen> {
             ),
           ],
           
-          const SizedBox(height: AppStyles.spacing32),
+          const SizedBox(height: 32),
           
           // Terms and Conditions
           CheckboxListTile(
@@ -449,12 +479,22 @@ class _RegisterScreenState extends State<RegisterScreen> {
             controlAffinity: ListTileControlAffinity.leading,
           ),
           
-          const SizedBox(height: AppStyles.spacing16),
+          const SizedBox(height: 16),
           
           // Account Summary
           Container(
-            padding: const EdgeInsets.all(AppStyles.spacing16),
-            decoration: AppStyles.cardDecoration,
+            padding: const EdgeInsets.all(16),
+            decoration: BoxDecoration(
+              color: AppColors.surface,
+              borderRadius: BorderRadius.circular(12),
+              boxShadow: [
+                BoxShadow(
+                  color: AppColors.cardShadow,
+                  blurRadius: 8,
+                  offset: const Offset(0, 2),
+                ),
+              ],
+            ),
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [

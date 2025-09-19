@@ -71,13 +71,13 @@ class _LoginScreenState extends State<LoginScreen> {
       backgroundColor: AppColors.background,
       body: SafeArea(
         child: SingleChildScrollView(
-          padding: const EdgeInsets.all(AppStyles.spacing24),
+          padding: const EdgeInsets.all(24),
           child: Form(
             key: _formKey,
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.stretch,
               children: [
-                const SizedBox(height: AppStyles.spacing32),
+                const SizedBox(height: 32),
                 
                 // Logo and Welcome
                 Container(
@@ -101,14 +101,14 @@ class _LoginScreenState extends State<LoginScreen> {
                           color: AppColors.textOnPrimary,
                         ),
                       ),
-                      const SizedBox(height: AppStyles.spacing16),
+                      const SizedBox(height: 16),
                       Text(
                         'Welcome Back!',
-                        style: AppStyles.heading1.copyWith(
+                        style: AppStyles.headlineMedium.copyWith(
                           color: AppColors.primary,
                         ),
                       ),
-                      const SizedBox(height: AppStyles.spacing8),
+                      const SizedBox(height: 8),
                       Text(
                         'Sign in to your artisan marketplace account',
                         style: AppStyles.bodyMedium,
@@ -118,28 +118,50 @@ class _LoginScreenState extends State<LoginScreen> {
                   ),
                 ),
                 
-                const SizedBox(height: AppStyles.spacing32),
+                const SizedBox(height: 32),
                 
                 // Email Field
-                EmailTextField(
+                CustomTextField(
+                  label: 'Email Address',
+                  hintText: 'Enter your email address',
                   controller: _emailController,
+                  prefixIcon: Icons.email_outlined,
+                  keyboardType: TextInputType.emailAddress,
+                  validator: (value) {
+                    if (value == null || value.isEmpty) {
+                      return 'Please enter your email';
+                    }
+                    if (!value.contains('@') || !value.contains('.')) {
+                      return 'Please enter a valid email address';
+                    }
+                    return null;
+                  },
                 ),
                 
-                const SizedBox(height: AppStyles.spacing16),
+                const SizedBox(height: 16),
                 
                 // Password Field
-                PasswordTextField(
+                CustomTextField(
+                  label: 'Password',
+                  hintText: 'Enter your password',
                   controller: _passwordController,
+                  prefixIcon: Icons.lock_outline,
+                  obscureText: true,
+                  validator: (value) {
+                    if (value == null || value.isEmpty) {
+                      return 'Please enter your password';
+                    }
+                    return null;
+                  },
                 ),
                 
-                const SizedBox(height: AppStyles.spacing8),
+                const SizedBox(height: 8),
                 
                 // Forgot Password
                 Align(
                   alignment: Alignment.centerRight,
                   child: TextButton(
                     onPressed: () {
-                      // TODO: Implement forgot password
                       ScaffoldMessenger.of(context).showSnackBar(
                         const SnackBar(
                           content: Text('Forgot password feature coming soon!'),
@@ -155,7 +177,7 @@ class _LoginScreenState extends State<LoginScreen> {
                   ),
                 ),
                 
-                const SizedBox(height: AppStyles.spacing24),
+                const SizedBox(height: 24),
                 
                 // Login Button
                 PrimaryButton(
@@ -164,7 +186,7 @@ class _LoginScreenState extends State<LoginScreen> {
                   isLoading: _isLoading,
                 ),
                 
-                const SizedBox(height: AppStyles.spacing24),
+                const SizedBox(height: 24),
                 
                 // Divider
                 Row(
@@ -183,7 +205,7 @@ class _LoginScreenState extends State<LoginScreen> {
                   ],
                 ),
                 
-                const SizedBox(height: AppStyles.spacing24),
+                const SizedBox(height: 24),
                 
                 // Guest Browse Button
                 OutlinedCustomButton(
@@ -194,7 +216,7 @@ class _LoginScreenState extends State<LoginScreen> {
                   },
                 ),
                 
-                const SizedBox(height: AppStyles.spacing32),
+                const SizedBox(height: 32),
                 
                 // Sign Up Link
                 Row(
@@ -223,14 +245,14 @@ class _LoginScreenState extends State<LoginScreen> {
                   ],
                 ),
                 
-                const SizedBox(height: AppStyles.spacing16),
+                const SizedBox(height: 16),
                 
                 // App Info
                 Container(
-                  padding: const EdgeInsets.all(AppStyles.spacing16),
+                  padding: const EdgeInsets.all(16),
                   decoration: BoxDecoration(
                     color: AppColors.surfaceLight,
-                    borderRadius: BorderRadius.circular(AppStyles.radiusMedium),
+                    borderRadius: BorderRadius.circular(8),
                     border: Border.all(color: AppColors.border.withOpacity(0.5)),
                   ),
                   child: Column(

@@ -23,8 +23,8 @@ class AIService {
   factory AIService() => _instance;
   AIService._internal();
 
-  // Mock API key - replace with actual key
-  final String _apiKey = 'your-gemini-api-key';
+  
+  final String _apiKey = 'AIzaSyDoSHB4Ay4SIL0jXweqANHZNnXxg5iWvdM';
 
   Future<String> generateProductDescription({
     required String imagePath,
