@@ -16,7 +16,7 @@ class ProfileScreen extends StatefulWidget {
 class _ProfileScreenState extends State<ProfileScreen> {
   late User currentUser;
   bool _isEditing = false;
-  
+
   final _nameController = TextEditingController();
   final _phoneController = TextEditingController();
   final _addressController = TextEditingController();
@@ -42,7 +42,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
       createdAt: DateTime.now().subtract(const Duration(days: 30)),
       isVerifiedArtisan: true,
     );
-    
+
     _updateControllers();
   }
 
@@ -79,13 +79,16 @@ class _ProfileScreenState extends State<ProfileScreen> {
   }
 
   void _switchRole() {
-    final newRole = currentUser.role == UserRole.seller ? UserRole.buyer : UserRole.seller;
+    final newRole =
+        currentUser.role == UserRole.seller ? UserRole.buyer : UserRole.seller;
     setState(() {
       currentUser = currentUser.copyWith(role: newRole);
     });
-    
+
     ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(content: Text('Switched to ${newRole.toString().split('.').last} mode')),
+      SnackBar(
+          content:
+              Text('Switched to ${newRole.toString().split('.').last} mode')),
     );
   }
 
@@ -147,87 +150,158 @@ class _ProfileScreenState extends State<ProfileScreen> {
   }
 
   Widget _buildProfileHeader() {
-    return Column(
-      children: [
-        Stack(
-          children: [
-            CircleAvatar(
-              radius: 60,
-              backgroundColor: AppColors.primaryLight,
-              backgroundImage: currentUser.profileImageUrl != null
-                  ? NetworkImage(currentUser.profileImageUrl!)
-                  : null,
-              child: currentUser.profileImageUrl == null
-                  ? Text(
-                      currentUser.name.isNotEmpty ? currentUser.name[0].toUpperCase() : 'A',
-                      style: const TextStyle(
-                        color: AppColors.textOnPrimary,
-                        fontSize: 32,
-                        fontWeight: FontWeight.bold,
-                      ),
-                    )
-                  : null,
-            ),
-            if (currentUser.isVerifiedArtisan)
-              Positioned(
-                bottom: 0,
-                right: 0,
-                child: Container(
-                  padding: const EdgeInsets.all(4),
-                  decoration: BoxDecoration(
-                    color: AppColors.artisanGold,
-                    shape: BoxShape.circle,
-                    border: Border.all(color: AppColors.surface, width: 2),
+    return Container(
+      padding: const EdgeInsets.all(AppStyles.spacing24),
+      decoration: BoxDecoration(
+        gradient: const LinearGradient(
+          colors: AppColors.primaryGradient,
+          begin: Alignment.topLeft,
+          end: Alignment.bottomRight,
+        ),
+        borderRadius: const BorderRadius.vertical(
+          bottom: Radius.circular(AppStyles.radiusXLarge),
+        ),
+        boxShadow: [
+          BoxShadow(
+            color: AppColors.primary.withOpacity(0.3),
+            blurRadius: 12,
+            offset: const Offset(0, 6),
+          ),
+        ],
+      ),
+      child: Column(
+        children: [
+          Stack(
+            children: [
+              Container(
+                decoration: BoxDecoration(
+                  shape: BoxShape.circle,
+                  border: Border.all(
+                    color: AppColors.textOnPrimary,
+                    width: 4,
                   ),
-                  child: const Icon(
-                    Icons.verified,
-                    color: Colors.white,
-                    size: 20,
-                  ),
+                  boxShadow: [
+                    BoxShadow(
+                      color: AppColors.cardShadow,
+                      blurRadius: 8,
+                      offset: const Offset(0, 4),
+                    ),
+                  ],
+                ),
+                child: CircleAvatar(
+                  radius: 50,
+                  backgroundColor: AppColors.textOnPrimary,
+                  backgroundImage: currentUser.profileImageUrl != null
+                      ? NetworkImage(currentUser.profileImageUrl!)
+                      : null,
+                  child: currentUser.profileImageUrl == null
+                      ? Text(
+                          currentUser.name.isNotEmpty
+                              ? currentUser.name[0].toUpperCase()
+                              : 'A',
+                          style: TextStyle(
+                            color: AppColors.primary,
+                            fontSize: 28,
+                            fontWeight: FontWeight.bold,
+                          ),
+                        )
+                      : null,
                 ),
               ),
-          ],
-        ),
-        const SizedBox(height: 16),
-        Text(
-          currentUser.name,
-          style: AppStyles.headlineMedium,
-          textAlign: TextAlign.center,
-        ),
-        const SizedBox(height: 4),
-        Row(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: [
-            _buildStatusChip(
-              currentUser.role.toString().split('.').last.toUpperCase(),
-              AppColors.primary,
+              if (currentUser.isVerifiedArtisan)
+                Positioned(
+                  bottom: 0,
+                  right: 0,
+                  child: Container(
+                    padding: const EdgeInsets.all(6),
+                    decoration: BoxDecoration(
+                      gradient: const LinearGradient(
+                        colors: AppColors.goldGradient,
+                      ),
+                      shape: BoxShape.circle,
+                      border:
+                          Border.all(color: AppColors.textOnPrimary, width: 3),
+                      boxShadow: [
+                        BoxShadow(
+                          color: AppColors.accent.withOpacity(0.4),
+                          blurRadius: 6,
+                          offset: const Offset(0, 3),
+                        ),
+                      ],
+                    ),
+                    child: const Icon(
+                      Icons.verified,
+                      color: AppColors.textOnPrimary,
+                      size: 18,
+                    ),
+                  ),
+                ),
+            ],
+          ),
+          const SizedBox(height: AppStyles.spacing20),
+          Text(
+            currentUser.name,
+            style: AppStyles.headlineMedium.copyWith(
+              color: AppColors.textOnPrimary,
+              fontWeight: FontWeight.bold,
             ),
-            const SizedBox(width: 8),
-            if (currentUser.isVerifiedArtisan)
-              _buildStatusChip('VERIFIED ARTISAN', AppColors.artisanGold),
-          ],
-        ),
-        const SizedBox(height: 8),
-        Text(
-          'Member since ${_formatDate(currentUser.createdAt)}',
-          style: AppStyles.bodySmall.copyWith(color: AppColors.textSecondary),
-        ),
-      ],
+            textAlign: TextAlign.center,
+          ),
+          const SizedBox(height: AppStyles.spacing8),
+          Row(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              _buildStatusChip(
+                currentUser.role.toString().split('.').last.toUpperCase(),
+                AppColors.textOnPrimary,
+                AppColors.primary,
+              ),
+              const SizedBox(width: AppStyles.spacing8),
+              if (currentUser.isVerifiedArtisan)
+                _buildStatusChip(
+                  'VERIFIED ARTISAN',
+                  AppColors.textOnPrimary,
+                  AppColors.artisanGold,
+                ),
+            ],
+          ),
+          const SizedBox(height: AppStyles.spacing12),
+          Container(
+            padding: const EdgeInsets.symmetric(
+              horizontal: AppStyles.spacing16,
+              vertical: AppStyles.spacing8,
+            ),
+            decoration: BoxDecoration(
+              color: AppColors.textOnPrimary.withOpacity(0.2),
+              borderRadius: BorderRadius.circular(AppStyles.radiusLarge),
+            ),
+            child: Text(
+              'Member since ${_formatDate(currentUser.createdAt)}',
+              style: AppStyles.bodyMedium.copyWith(
+                color: AppColors.textOnPrimary,
+                fontWeight: FontWeight.w500,
+              ),
+            ),
+          ),
+        ],
+      ),
     );
   }
 
-  Widget _buildStatusChip(String label, Color color) {
+  Widget _buildStatusChip(
+      String label, Color textColor, Color backgroundColor) {
     return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 4),
+      padding: const EdgeInsets.symmetric(
+          horizontal: AppStyles.spacing12, vertical: AppStyles.spacing4),
       decoration: BoxDecoration(
-        color: color.withOpacity(0.1),
-        borderRadius: BorderRadius.circular(12),
-        border: Border.all(color: color),
+        color: backgroundColor.withOpacity(0.2),
+        borderRadius: BorderRadius.circular(AppStyles.radiusLarge),
+        border: Border.all(color: textColor, width: 1),
       ),
       child: Text(
         label,
         style: AppStyles.bodySmall.copyWith(
-          color: color,
+          color: textColor,
           fontWeight: FontWeight.bold,
         ),
       ),
@@ -239,25 +313,20 @@ class _ProfileScreenState extends State<ProfileScreen> {
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         _buildSectionTitle('Personal Information'),
-        
         CustomTextField(
           controller: _nameController,
           label: 'Full Name',
           enabled: _isEditing,
           prefixIcon: Icons.person,
         ),
-        
         const SizedBox(height: 16),
-        
         CustomTextField(
           controller: TextEditingController(text: currentUser.email),
           label: 'Email',
           enabled: false,
           prefixIcon: Icons.email,
         ),
-        
         const SizedBox(height: 16),
-        
         CustomTextField(
           controller: _phoneController,
           label: 'Phone Number',
@@ -265,9 +334,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
           prefixIcon: Icons.phone,
           keyboardType: TextInputType.phone,
         ),
-        
         const SizedBox(height: 16),
-        
         CustomTextField(
           controller: _addressController,
           label: 'Address',
@@ -275,11 +342,8 @@ class _ProfileScreenState extends State<ProfileScreen> {
           prefixIcon: Icons.location_on,
           maxLines: 2,
         ),
-        
         const SizedBox(height: 24),
-        
         _buildSectionTitle('About'),
-        
         CustomTextField(
           controller: _bioController,
           label: 'Bio / Artisan Story',
@@ -333,17 +397,14 @@ class _ProfileScreenState extends State<ProfileScreen> {
           onPressed: _toggleEditMode,
           icon: Icons.edit,
         ),
-        
         const SizedBox(height: 12),
-        
         OutlinedCustomButton(
-          text: 'Switch to ${currentUser.role == UserRole.seller ? 'Buyer' : 'Seller'} Mode',
+          text:
+              'Switch to ${currentUser.role == UserRole.seller ? 'Buyer' : 'Seller'} Mode',
           onPressed: _switchRole,
           icon: Icons.swap_horiz,
         ),
-        
         const SizedBox(height: 24),
-        
         _buildSettingsSection(),
       ],
     );
@@ -359,7 +420,6 @@ class _ProfileScreenState extends State<ProfileScreen> {
             const SnackBar(content: Text('Order history coming soon!')),
           ),
         ),
-        
         _buildSettingsItem(
           'Notifications',
           Icons.notifications_outlined,
@@ -367,7 +427,6 @@ class _ProfileScreenState extends State<ProfileScreen> {
             const SnackBar(content: Text('Notification settings coming soon!')),
           ),
         ),
-        
         _buildSettingsItem(
           'Settings',
           Icons.settings,
@@ -375,7 +434,6 @@ class _ProfileScreenState extends State<ProfileScreen> {
             const SnackBar(content: Text('Settings coming soon!')),
           ),
         ),
-        
         _buildSettingsItem(
           'Help & Support',
           Icons.help,
@@ -383,7 +441,6 @@ class _ProfileScreenState extends State<ProfileScreen> {
             const SnackBar(content: Text('Help & Support coming soon!')),
           ),
         ),
-        
         _buildSettingsItem(
           'Privacy Policy',
           Icons.privacy_tip,
@@ -391,7 +448,6 @@ class _ProfileScreenState extends State<ProfileScreen> {
             const SnackBar(content: Text('Privacy Policy coming soon!')),
           ),
         ),
-        
         _buildSettingsItem(
           'Logout',
           Icons.logout,
@@ -402,30 +458,82 @@ class _ProfileScreenState extends State<ProfileScreen> {
     );
   }
 
-  Widget _buildSettingsItem(String title, IconData icon, VoidCallback onTap, {bool isDestructive = false}) {
-    return Card(
-      margin: const EdgeInsets.only(bottom: 8),
-      child: ListTile(
-        leading: Icon(
-          icon,
-          color: isDestructive ? AppColors.error : AppColors.primary,
-        ),
-        title: Text(
-          title,
-          style: AppStyles.bodyLarge.copyWith(
-            color: isDestructive ? AppColors.error : null,
+  Widget _buildSettingsItem(String title, IconData icon, VoidCallback onTap,
+      {bool isDestructive = false}) {
+    return Container(
+      margin: const EdgeInsets.only(bottom: AppStyles.spacing8),
+      decoration: BoxDecoration(
+        color: AppColors.surface,
+        borderRadius: BorderRadius.circular(AppStyles.radiusLarge),
+        boxShadow: [
+          BoxShadow(
+            color: AppColors.cardShadow,
+            blurRadius: 4,
+            offset: const Offset(0, 2),
+          ),
+        ],
+      ),
+      child: Material(
+        color: Colors.transparent,
+        child: InkWell(
+          onTap: onTap,
+          borderRadius: BorderRadius.circular(AppStyles.radiusLarge),
+          child: Padding(
+            padding: const EdgeInsets.all(AppStyles.spacing16),
+            child: Row(
+              children: [
+                Container(
+                  padding: const EdgeInsets.all(AppStyles.spacing8),
+                  decoration: BoxDecoration(
+                    color: (isDestructive ? AppColors.error : AppColors.primary)
+                        .withOpacity(0.1),
+                    borderRadius: BorderRadius.circular(AppStyles.radiusMedium),
+                  ),
+                  child: Icon(
+                    icon,
+                    color: isDestructive ? AppColors.error : AppColors.primary,
+                    size: 20,
+                  ),
+                ),
+                const SizedBox(width: AppStyles.spacing16),
+                Expanded(
+                  child: Text(
+                    title,
+                    style: AppStyles.bodyLarge.copyWith(
+                      color: isDestructive
+                          ? AppColors.error
+                          : AppColors.textPrimary,
+                      fontWeight: FontWeight.w500,
+                    ),
+                  ),
+                ),
+                Icon(
+                  Icons.chevron_right,
+                  color: AppColors.textSecondary,
+                  size: 20,
+                ),
+              ],
+            ),
           ),
         ),
-        trailing: const Icon(Icons.chevron_right),
-        onTap: onTap,
       ),
     );
   }
 
   String _formatDate(DateTime date) {
     final months = [
-      'Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun',
-      'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'
+      'Jan',
+      'Feb',
+      'Mar',
+      'Apr',
+      'May',
+      'Jun',
+      'Jul',
+      'Aug',
+      'Sep',
+      'Oct',
+      'Nov',
+      'Dec'
     ];
     return '${date.day} ${months[date.month - 1]} ${date.year}';
   }

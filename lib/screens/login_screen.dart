@@ -1,6 +1,5 @@
 // lib/screens/login_screen.dart
 import 'package:flutter/material.dart';
-import '../models/user.dart';
 import '../services/auth_service.dart';
 import '../utils/app_colors.dart';
 import '../utils/app_styles.dart';
@@ -20,7 +19,7 @@ class _LoginScreenState extends State<LoginScreen> {
   final _emailController = TextEditingController();
   final _passwordController = TextEditingController();
   final _authService = AuthService();
-  
+
   bool _isLoading = false;
 
   @override
@@ -65,6 +64,78 @@ class _LoginScreenState extends State<LoginScreen> {
     }
   }
 
+  Future<void> _signInWithGoogle() async {
+    setState(() => _isLoading = true);
+
+    try {
+      final result = await _authService.signInWithGoogle();
+
+      if (result.success && mounted) {
+        Navigator.of(context).pushReplacementNamed('/home');
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text(result.message ?? 'Google sign in successful'),
+            backgroundColor: AppColors.success,
+          ),
+        );
+      } else if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text(result.message ?? 'Google sign in failed'),
+            backgroundColor: AppColors.error,
+          ),
+        );
+      }
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text('Google sign in error. Please try again.'),
+            backgroundColor: AppColors.error,
+          ),
+        );
+      }
+    } finally {
+      if (mounted) setState(() => _isLoading = false);
+    }
+  }
+
+  Future<void> _signInWithFacebook() async {
+    setState(() => _isLoading = true);
+
+    try {
+      final result = await _authService.signInWithFacebook();
+
+      if (result.success && mounted) {
+        Navigator.of(context).pushReplacementNamed('/home');
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text(result.message ?? 'Facebook sign in successful'),
+            backgroundColor: AppColors.success,
+          ),
+        );
+      } else if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text(result.message ?? 'Facebook sign in failed'),
+            backgroundColor: AppColors.error,
+          ),
+        );
+      }
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text('Facebook sign in error. Please try again.'),
+            backgroundColor: AppColors.error,
+          ),
+        );
+      }
+    } finally {
+      if (mounted) setState(() => _isLoading = false);
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -78,7 +149,7 @@ class _LoginScreenState extends State<LoginScreen> {
               crossAxisAlignment: CrossAxisAlignment.stretch,
               children: [
                 const SizedBox(height: 32),
-                
+
                 // Logo and Welcome
                 Container(
                   alignment: Alignment.center,
@@ -117,9 +188,9 @@ class _LoginScreenState extends State<LoginScreen> {
                     ],
                   ),
                 ),
-                
+
                 const SizedBox(height: 32),
-                
+
                 // Email Field
                 CustomTextField(
                   label: 'Email Address',
@@ -137,9 +208,9 @@ class _LoginScreenState extends State<LoginScreen> {
                     return null;
                   },
                 ),
-                
+
                 const SizedBox(height: 16),
-                
+
                 // Password Field
                 CustomTextField(
                   label: 'Password',
@@ -154,9 +225,9 @@ class _LoginScreenState extends State<LoginScreen> {
                     return null;
                   },
                 ),
-                
+
                 const SizedBox(height: 8),
-                
+
                 // Forgot Password
                 Align(
                   alignment: Alignment.centerRight,
@@ -176,18 +247,43 @@ class _LoginScreenState extends State<LoginScreen> {
                     ),
                   ),
                 ),
-                
+
                 const SizedBox(height: 24),
-                
+
                 // Login Button
                 PrimaryButton(
                   text: 'Sign In',
                   onPressed: _login,
                   isLoading: _isLoading,
                 ),
-                
+
                 const SizedBox(height: 24),
-                
+
+                // Social Login Buttons
+                Row(
+                  children: [
+                    Expanded(
+                      child: _buildSocialButton(
+                        'Google',
+                        Icons.g_mobiledata,
+                        const Color(0xFF4285F4),
+                        _signInWithGoogle,
+                      ),
+                    ),
+                    const SizedBox(width: 12),
+                    Expanded(
+                      child: _buildSocialButton(
+                        'Facebook',
+                        Icons.facebook,
+                        const Color(0xFF1877F2),
+                        _signInWithFacebook,
+                      ),
+                    ),
+                  ],
+                ),
+
+                const SizedBox(height: 24),
+
                 // Divider
                 Row(
                   children: [
@@ -204,9 +300,9 @@ class _LoginScreenState extends State<LoginScreen> {
                     const Expanded(child: Divider()),
                   ],
                 ),
-                
+
                 const SizedBox(height: 24),
-                
+
                 // Guest Browse Button
                 OutlinedCustomButton(
                   text: 'Browse as Guest',
@@ -215,9 +311,9 @@ class _LoginScreenState extends State<LoginScreen> {
                     Navigator.of(context).pushReplacementNamed('/home');
                   },
                 ),
-                
+
                 const SizedBox(height: 32),
-                
+
                 // Sign Up Link
                 Row(
                   mainAxisAlignment: MainAxisAlignment.center,
@@ -244,16 +340,17 @@ class _LoginScreenState extends State<LoginScreen> {
                     ),
                   ],
                 ),
-                
+
                 const SizedBox(height: 16),
-                
+
                 // App Info
                 Container(
                   padding: const EdgeInsets.all(16),
                   decoration: BoxDecoration(
                     color: AppColors.surfaceLight,
                     borderRadius: BorderRadius.circular(8),
-                    border: Border.all(color: AppColors.border.withOpacity(0.5)),
+                    border:
+                        Border.all(color: AppColors.border.withOpacity(0.5)),
                   ),
                   child: Column(
                     children: [
@@ -271,6 +368,48 @@ class _LoginScreenState extends State<LoginScreen> {
                         textAlign: TextAlign.center,
                       ),
                     ],
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+
+  Widget _buildSocialButton(
+      String label, IconData icon, Color color, VoidCallback onPressed) {
+    return Container(
+      decoration: BoxDecoration(
+        color: color.withOpacity(0.1),
+        borderRadius: BorderRadius.circular(AppStyles.radiusLarge),
+        border: Border.all(color: color.withOpacity(0.3)),
+      ),
+      child: Material(
+        color: Colors.transparent,
+        child: InkWell(
+          onTap: onPressed,
+          borderRadius: BorderRadius.circular(AppStyles.radiusLarge),
+          child: Container(
+            padding: const EdgeInsets.symmetric(
+              horizontal: AppStyles.spacing16,
+              vertical: AppStyles.spacing12,
+            ),
+            child: Row(
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: [
+                Icon(
+                  icon,
+                  color: color,
+                  size: 20,
+                ),
+                const SizedBox(width: AppStyles.spacing8),
+                Text(
+                  label,
+                  style: AppStyles.bodyMedium.copyWith(
+                    color: color,
+                    fontWeight: FontWeight.w600,
                   ),
                 ),
               ],

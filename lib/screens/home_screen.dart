@@ -3,15 +3,13 @@ import 'package:flutter/material.dart';
 import '../models/product.dart';
 import '../models/user.dart';
 import '../services/auth_service.dart';
-import '../services/ai_service.dart';
 import '../utils/app_colors.dart';
 import '../utils/app_styles.dart';
 import '../widgets/product_card.dart';
-import '../widgets/custom_textfield.dart';
 import 'login_screen.dart';
 import 'seller_dashboard_screen.dart';
 import 'chat_screen.dart';
-// import 'product_detail_screen.dart'; // Temporarily commented out
+import 'product_detail_screen.dart';
 
 class HomeScreen extends StatefulWidget {
   const HomeScreen({super.key});
@@ -22,14 +20,14 @@ class HomeScreen extends StatefulWidget {
 
 class _HomeScreenState extends State<HomeScreen> {
   final _authService = AuthService();
-  final _aiService = AIService();
   final _searchController = TextEditingController();
-  
+
   List<Product> _products = [];
   List<Product> _filteredProducts = [];
   ProductCategory? _selectedCategory;
   bool _isLoading = true;
   String _searchQuery = '';
+  Set<String> _favoriteProductIds = {};
 
   @override
   void initState() {
@@ -45,13 +43,14 @@ class _HomeScreenState extends State<HomeScreen> {
 
   Future<void> _loadProducts() async {
     setState(() => _isLoading = true);
-    
+
     // Mock product data - in real app, fetch from API
     _products = [
       Product(
         id: "1",
         name: "Handmade Pottery Vase",
-        description: "Beautiful ceramic vase with intricate traditional patterns.",
+        description:
+            "Beautiful ceramic vase with intricate traditional patterns.",
         descriptionLocal: "पारंपरिक भारतीय मिट्टी के बर्तनों की कलाकृति।",
         imageUrl: "https://picsum.photos/400/400?pottery",
         imageUrls: const ["https://picsum.photos/400/400?pottery"],
@@ -63,12 +62,14 @@ class _HomeScreenState extends State<HomeScreen> {
         tags: const ["handmade", "pottery", "traditional", "ceramic"],
         createdAt: DateTime.now().subtract(const Duration(days: 2)),
         updatedAt: DateTime.now().subtract(const Duration(hours: 6)),
-        culturalStory: "This pottery style has been practiced in our village for over 300 years...",
+        culturalStory:
+            "This pottery style has been practiced in our village for over 300 years...",
       ),
       Product(
         id: "2",
         name: "Embroidered Silk Dupatta",
-        description: "Exquisite handwoven silk dupatta featuring traditional embroidery.",
+        description:
+            "Exquisite handwoven silk dupatta featuring traditional embroidery.",
         descriptionLocal: "सुंदर हाथ से बुना गया रेशमी दुपट्टा।",
         imageUrl: "https://picsum.photos/400/400?silk",
         imageUrls: const ["https://picsum.photos/400/400?silk"],
@@ -99,7 +100,8 @@ class _HomeScreenState extends State<HomeScreen> {
       Product(
         id: "4",
         name: "Wooden Elephant Sculpture",
-        description: "Masterfully carved wooden elephant showcasing traditional techniques.",
+        description:
+            "Masterfully carved wooden elephant showcasing traditional techniques.",
         descriptionLocal: "लकड़ी का हाथी की मूर्ति।",
         imageUrl: "https://picsum.photos/400/400?wood",
         imageUrls: const ["https://picsum.photos/400/400?wood"],
@@ -114,7 +116,8 @@ class _HomeScreenState extends State<HomeScreen> {
       Product(
         id: "5",
         name: "Silver Oxidized Necklace",
-        description: "Beautiful handcrafted silver necklace with traditional finish.",
+        description:
+            "Beautiful handcrafted silver necklace with traditional finish.",
         descriptionLocal: "चांदी का हस्तनिर्मित हार।",
         imageUrl: "https://picsum.photos/400/400?jewelry",
         imageUrls: const ["https://picsum.photos/400/400?jewelry"],
@@ -127,7 +130,7 @@ class _HomeScreenState extends State<HomeScreen> {
         updatedAt: DateTime.now().subtract(const Duration(hours: 4)),
       ),
     ];
-    
+
     _filteredProducts = List.from(_products);
     setState(() => _isLoading = false);
   }
@@ -137,11 +140,15 @@ class _HomeScreenState extends State<HomeScreen> {
       _filteredProducts = _products.where((product) {
         final matchesSearch = _searchQuery.isEmpty ||
             product.name.toLowerCase().contains(_searchQuery.toLowerCase()) ||
-            product.description.toLowerCase().contains(_searchQuery.toLowerCase()) ||
-            product.tags.any((tag) => tag.toLowerCase().contains(_searchQuery.toLowerCase()));
-        
-        final matchesCategory = _selectedCategory == null || product.category == _selectedCategory;
-        
+            product.description
+                .toLowerCase()
+                .contains(_searchQuery.toLowerCase()) ||
+            product.tags.any((tag) =>
+                tag.toLowerCase().contains(_searchQuery.toLowerCase()));
+
+        final matchesCategory =
+            _selectedCategory == null || product.category == _selectedCategory;
+
         return matchesSearch && matchesCategory;
       }).toList();
     });
@@ -157,11 +164,36 @@ class _HomeScreenState extends State<HomeScreen> {
     _filterProducts();
   }
 
+  void _toggleFavorite(Product product) {
+    setState(() {
+      if (_favoriteProductIds.contains(product.id)) {
+        _favoriteProductIds.remove(product.id);
+      } else {
+        _favoriteProductIds.add(product.id);
+      }
+    });
+
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        content: Text(
+          _favoriteProductIds.contains(product.id)
+              ? 'Added to favorites'
+              : 'Removed from favorites',
+        ),
+        duration: const Duration(seconds: 1),
+      ),
+    );
+  }
+
+  bool _isProductFavorite(Product product) {
+    return _favoriteProductIds.contains(product.id);
+  }
+
   @override
   Widget build(BuildContext context) {
     final isLoggedIn = _authService.isLoggedIn;
     final user = _authService.currentUser;
-    
+
     return Scaffold(
       backgroundColor: AppColors.background,
       appBar: AppBar(
@@ -195,7 +227,8 @@ class _HomeScreenState extends State<HomeScreen> {
                 icon: const Icon(Icons.dashboard),
                 onPressed: () {
                   Navigator.of(context).push(
-                    MaterialPageRoute(builder: (context) => const SellerDashboardScreen()),
+                    MaterialPageRoute(
+                        builder: (context) => const SellerDashboardScreen()),
                   );
                 },
               ),
@@ -213,16 +246,19 @@ class _HomeScreenState extends State<HomeScreen> {
       ),
       body: _isLoading
           ? const Center(child: CircularProgressIndicator())
-          : Column(
-              children: [
-                _buildSearchAndFilter(),
-                _buildCategoryFilter(),
-                Expanded(
-                  child: _filteredProducts.isEmpty
-                      ? _buildEmptyState()
-                      : _buildProductsGrid(),
-                ),
-              ],
+          : RefreshIndicator(
+              onRefresh: _loadProducts,
+              child: Column(
+                children: [
+                  _buildSearchAndFilter(),
+                  _buildCategoryFilter(),
+                  Expanded(
+                    child: _filteredProducts.isEmpty
+                        ? _buildEmptyState()
+                        : _buildProductsGrid(),
+                  ),
+                ],
+              ),
             ),
       floatingActionButton: !isLoggedIn
           ? null
@@ -230,7 +266,8 @@ class _HomeScreenState extends State<HomeScreen> {
               ? FloatingActionButton(
                   onPressed: () {
                     Navigator.of(context).push(
-                      MaterialPageRoute(builder: (context) => const ChatScreen()),
+                      MaterialPageRoute(
+                          builder: (context) => const ChatScreen()),
                     );
                   },
                   backgroundColor: AppColors.accent,
@@ -242,22 +279,67 @@ class _HomeScreenState extends State<HomeScreen> {
 
   Widget _buildSearchAndFilter() {
     return Container(
-      padding: const EdgeInsets.all(16),
+      padding: const EdgeInsets.all(AppStyles.spacing16),
+      decoration: BoxDecoration(
+        color: AppColors.surface,
+        boxShadow: [
+          BoxShadow(
+            color: AppColors.cardShadow,
+            blurRadius: 4,
+            offset: const Offset(0, 2),
+          ),
+        ],
+      ),
       child: Row(
         children: [
           Expanded(
-            child: CustomTextField(
-              controller: _searchController,
-              hintText: 'Search products, artisans...',
-              prefixIcon: Icons.search,
-              onChanged: _onSearchChanged,
+            child: Container(
+              decoration: BoxDecoration(
+                color: AppColors.background,
+                borderRadius: BorderRadius.circular(AppStyles.radiusLarge),
+                border: Border.all(color: AppColors.border),
+              ),
+              child: TextField(
+                controller: _searchController,
+                decoration: InputDecoration(
+                  hintText: 'Search products, artisans...',
+                  hintStyle: TextStyle(color: AppColors.textHint),
+                  prefixIcon:
+                      Icon(Icons.search, color: AppColors.textSecondary),
+                  suffixIcon: _searchQuery.isNotEmpty
+                      ? IconButton(
+                          icon:
+                              Icon(Icons.clear, color: AppColors.textSecondary),
+                          onPressed: () {
+                            _searchController.clear();
+                            _onSearchChanged('');
+                          },
+                        )
+                      : null,
+                  border: InputBorder.none,
+                  contentPadding: const EdgeInsets.symmetric(
+                    horizontal: AppStyles.spacing16,
+                    vertical: AppStyles.spacing12,
+                  ),
+                ),
+                onChanged: _onSearchChanged,
+              ),
             ),
           ),
-          const SizedBox(width: 12),
+          const SizedBox(width: AppStyles.spacing12),
           Container(
             decoration: BoxDecoration(
-              color: AppColors.primary,
-              borderRadius: BorderRadius.circular(12),
+              gradient: const LinearGradient(
+                colors: AppColors.primaryGradient,
+              ),
+              borderRadius: BorderRadius.circular(AppStyles.radiusLarge),
+              boxShadow: [
+                BoxShadow(
+                  color: AppColors.primary.withOpacity(0.3),
+                  blurRadius: 8,
+                  offset: const Offset(0, 4),
+                ),
+              ],
             ),
             child: IconButton(
               onPressed: _showFilterDialog,
@@ -274,37 +356,86 @@ class _HomeScreenState extends State<HomeScreen> {
 
   Widget _buildCategoryFilter() {
     return Container(
-      height: 50,
-      padding: const EdgeInsets.symmetric(horizontal: 16),
+      height: 60,
+      padding: const EdgeInsets.symmetric(
+        horizontal: AppStyles.spacing16,
+        vertical: AppStyles.spacing8,
+      ),
       child: ListView(
         scrollDirection: Axis.horizontal,
         children: [
-          _buildCategoryChip('All', null),
+          _buildCategoryChip('All', null, Icons.apps),
           for (ProductCategory category in ProductCategory.values)
-            _buildCategoryChip(category.name.toUpperCase(), category),
+            _buildCategoryChip(
+              category.name.toUpperCase(),
+              category,
+              _getCategoryIcon(category),
+            ),
         ],
       ),
     );
   }
 
-  Widget _buildCategoryChip(String label, ProductCategory? category) {
+  IconData _getCategoryIcon(ProductCategory category) {
+    switch (category) {
+      case ProductCategory.pottery:
+        return Icons.local_drink;
+      case ProductCategory.textiles:
+        return Icons.checkroom;
+      case ProductCategory.metalwork:
+        return Icons.build;
+      case ProductCategory.woodwork:
+        return Icons.carpenter;
+      case ProductCategory.jewelry:
+        return Icons.diamond;
+      case ProductCategory.painting:
+        return Icons.palette;
+      case ProductCategory.sculpture:
+        return Icons.account_balance;
+      case ProductCategory.handmade:
+        return Icons.handyman;
+      case ProductCategory.other:
+        return Icons.category;
+    }
+  }
+
+  Widget _buildCategoryChip(
+      String label, ProductCategory? category, IconData icon) {
     final isSelected = _selectedCategory == category;
-    
+
     return Container(
-      margin: const EdgeInsets.only(right: 8),
+      margin: const EdgeInsets.only(right: AppStyles.spacing8),
       child: FilterChip(
-        label: Text(label),
+        label: Row(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Icon(
+              icon,
+              size: 16,
+              color: isSelected ? AppColors.primary : AppColors.textSecondary,
+            ),
+            const SizedBox(width: 4),
+            Text(label),
+          ],
+        ),
         selected: isSelected,
-        onSelected: (selected) => _onCategorySelected(selected ? category : null),
+        onSelected: (selected) =>
+            _onCategorySelected(selected ? category : null),
         backgroundColor: AppColors.surface,
-        selectedColor: AppColors.primary.withOpacity(0.2),
+        selectedColor: AppColors.primary.withOpacity(0.1),
         labelStyle: TextStyle(
           color: isSelected ? AppColors.primary : AppColors.textSecondary,
           fontWeight: isSelected ? FontWeight.w600 : FontWeight.normal,
+          fontSize: 12,
         ),
         side: BorderSide(
           color: isSelected ? AppColors.primary : AppColors.border,
+          width: isSelected ? 2 : 1,
         ),
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(AppStyles.radiusLarge),
+        ),
+        elevation: isSelected ? 2 : 0,
       ),
     );
   }
@@ -320,9 +451,11 @@ class _HomeScreenState extends State<HomeScreen> {
       ),
       itemCount: _filteredProducts.length,
       itemBuilder: (context, index) {
-        return EnhancedProductCard(
+        return ProductCard(
           product: _filteredProducts[index],
           onTap: () => _navigateToProductDetail(_filteredProducts[index]),
+          onFavoriteToggle: () => _toggleFavorite(_filteredProducts[index]),
+          isFavorite: _isProductFavorite(_filteredProducts[index]),
         );
       },
     );
@@ -334,13 +467,15 @@ class _HomeScreenState extends State<HomeScreen> {
         mainAxisAlignment: MainAxisAlignment.center,
         children: [
           Icon(
-            _searchQuery.isNotEmpty ? Icons.search_off : Icons.inventory_2_outlined,
+            _searchQuery.isNotEmpty
+                ? Icons.search_off
+                : Icons.inventory_2_outlined,
             size: 64,
             color: AppColors.textHint,
           ),
           const SizedBox(height: 16),
           Text(
-            _searchQuery.isNotEmpty 
+            _searchQuery.isNotEmpty
                 ? 'No products found for "$_searchQuery"'
                 : 'No products available',
             style: const TextStyle(
@@ -350,7 +485,7 @@ class _HomeScreenState extends State<HomeScreen> {
           ),
           const SizedBox(height: 8),
           Text(
-            _searchQuery.isNotEmpty 
+            _searchQuery.isNotEmpty
                 ? 'Try searching with different keywords'
                 : 'Check back later for new arrivals',
             style: const TextStyle(color: AppColors.textHint),
@@ -399,7 +534,6 @@ class _HomeScreenState extends State<HomeScreen> {
               ],
             ),
             const SizedBox(height: 20),
-            
             const Text(
               'Price Range',
               style: TextStyle(
@@ -416,9 +550,7 @@ class _HomeScreenState extends State<HomeScreen> {
                 _buildPriceRangeChip('Above ₹1000'),
               ],
             ),
-            
             const SizedBox(height: 30),
-            
             SizedBox(
               width: double.infinity,
               child: ElevatedButton(
@@ -453,211 +585,9 @@ class _HomeScreenState extends State<HomeScreen> {
   }
 
   void _navigateToProductDetail(Product product) {
-    // Temporary - just show a snackbar until ProductDetailScreen is working
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(
-        content: Text('Opening ${product.name}...'),
-        duration: const Duration(seconds: 1),
-      ),
-    );
-    
-    // TODO: Uncomment when ProductDetailScreen is ready
-    // Navigator.of(context).push(
-    //   MaterialPageRoute(
-    //     builder: (context) => ProductDetailScreen(product: product),
-    //   ),
-    // );
-  }
-}
-
-// Enhanced Product Card Widget
-class EnhancedProductCard extends StatelessWidget {
-  final Product product;
-  final VoidCallback? onTap;
-
-  const EnhancedProductCard({
-    super.key,
-    required this.product,
-    this.onTap,
-  });
-
-  @override
-  Widget build(BuildContext context) {
-    return GestureDetector(
-      onTap: onTap,
-      child: Container(
-        decoration: BoxDecoration(
-          color: AppColors.surface,
-          borderRadius: BorderRadius.circular(16),
-          boxShadow: [
-            BoxShadow(
-              color: Colors.black.withOpacity(0.08),
-              blurRadius: 10,
-              offset: const Offset(0, 4),
-            ),
-          ],
-        ),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            // Product Image with badges
-            Expanded(
-              flex: 3,
-              child: Stack(
-                children: [
-                  ClipRRect(
-                    borderRadius: const BorderRadius.vertical(top: Radius.circular(16)),
-                    child: Image.network(
-                      product.imageUrl,
-                      width: double.infinity,
-                      height: double.infinity,
-                      fit: BoxFit.cover,
-                      loadingBuilder: (context, child, loadingProgress) {
-                        if (loadingProgress == null) return child;
-                        return Container(
-                          color: AppColors.surfaceLight,
-                          child: const Center(
-                            child: CircularProgressIndicator(strokeWidth: 2),
-                          ),
-                        );
-                      },
-                      errorBuilder: (context, error, stackTrace) {
-                        return Container(
-                          color: AppColors.surfaceLight,
-                          child: const Center(
-                            child: Icon(
-                              Icons.image_not_supported,
-                              color: AppColors.textHint,
-                              size: 32,
-                            ),
-                          ),
-                        );
-                      },
-                    ),
-                  ),
-                  
-                  // AI Enhancement Badge
-                  if (product.suggestedPrice != null)
-                    Positioned(
-                      top: 8,
-                      left: 8,
-                      child: Container(
-                        padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
-                        decoration: BoxDecoration(
-                          color: AppColors.accent,
-                          borderRadius: BorderRadius.circular(8),
-                        ),
-                        child: const Row(
-                          mainAxisSize: MainAxisSize.min,
-                          children: [
-                            Icon(
-                              Icons.auto_awesome,
-                              color: AppColors.textOnPrimary,
-                              size: 10,
-                            ),
-                            SizedBox(width: 2),
-                            Text(
-                              'AI',
-                              style: TextStyle(
-                                color: AppColors.textOnPrimary,
-                                fontSize: 8,
-                                fontWeight: FontWeight.bold,
-                              ),
-                            ),
-                          ],
-                        ),
-                      ),
-                    ),
-                  
-                  // Category Badge
-                  Positioned(
-                    bottom: 8,
-                    left: 8,
-                    child: Container(
-                      padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
-                      decoration: BoxDecoration(
-                        color: AppColors.primary.withOpacity(0.9),
-                        borderRadius: BorderRadius.circular(6),
-                      ),
-                      child: Text(
-                        product.categoryDisplayName,
-                        style: const TextStyle(
-                          color: AppColors.textOnPrimary,
-                          fontSize: 8,
-                          fontWeight: FontWeight.w600,
-                        ),
-                      ),
-                    ),
-                  ),
-                ],
-              ),
-            ),
-            
-            // Product Details
-            Expanded(
-              flex: 2,
-              child: Padding(
-                padding: const EdgeInsets.all(12),
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    // Product Name
-                    Text(
-                      product.name,
-                      style: const TextStyle(
-                        fontWeight: FontWeight.bold,
-                        fontSize: 14,
-                        color: AppColors.textPrimary,
-                      ),
-                      maxLines: 1,
-                      overflow: TextOverflow.ellipsis,
-                    ),
-                    
-                    const SizedBox(height: 4),
-                    
-                    // Seller Name
-                    Text(
-                      'by ${product.sellerName ?? 'Unknown'}',
-                      style: const TextStyle(
-                        fontSize: 11,
-                        color: AppColors.textSecondary,
-                        fontStyle: FontStyle.italic,
-                      ),
-                      maxLines: 1,
-                      overflow: TextOverflow.ellipsis,
-                    ),
-                    
-                    const Spacer(),
-                    
-                    // Price
-                    Row(
-                      children: [
-                        Text(
-                          product.formattedPrice,
-                          style: const TextStyle(
-                            color: AppColors.primary,
-                            fontWeight: FontWeight.bold,
-                            fontSize: 16,
-                          ),
-                        ),
-                        const Spacer(),
-                        if (product.hasPriceDifference)
-                          Text(
-                            product.formattedSuggestedPrice,
-                            style: const TextStyle(
-                              color: AppColors.textHint,
-                              fontSize: 10,
-                              decoration: TextDecoration.lineThrough,
-                            ),
-                          ),
-                      ],
-                    ),
-                  ],
-                ),
-              ),
-            ),
-          ],
-        ),
+    Navigator.of(context).push(
+      MaterialPageRoute(
+        builder: (context) => ProductDetailScreen(product: product),
       ),
     );
   }

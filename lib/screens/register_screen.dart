@@ -24,7 +24,7 @@ class _RegisterScreenState extends State<RegisterScreen> {
   final _confirmPasswordController = TextEditingController();
   final _aadhaarController = TextEditingController();
   final _authService = AuthService();
-  
+
   bool _isLoading = false;
   UserRole _selectedRole = UserRole.buyer;
   bool _agreeToTerms = false;
@@ -62,7 +62,9 @@ class _RegisterScreenState extends State<RegisterScreen> {
         password: _passwordController.text,
         phone: _phoneController.text.trim(),
         role: _selectedRole,
-        aadhaarNumber: _selectedRole == UserRole.seller ? _aadhaarController.text.trim() : null,
+        aadhaarNumber: _selectedRole == UserRole.seller
+            ? _aadhaarController.text.trim()
+            : null,
       );
 
       if (result.success && mounted) {
@@ -72,7 +74,7 @@ class _RegisterScreenState extends State<RegisterScreen> {
             backgroundColor: AppColors.success,
           ),
         );
-        
+
         Navigator.of(context).pushReplacementNamed('/home');
       } else if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
@@ -87,6 +89,78 @@ class _RegisterScreenState extends State<RegisterScreen> {
         ScaffoldMessenger.of(context).showSnackBar(
           const SnackBar(
             content: Text('An error occurred. Please try again.'),
+            backgroundColor: AppColors.error,
+          ),
+        );
+      }
+    } finally {
+      if (mounted) setState(() => _isLoading = false);
+    }
+  }
+
+  Future<void> _signInWithGoogle() async {
+    setState(() => _isLoading = true);
+
+    try {
+      final result = await _authService.signInWithGoogle();
+
+      if (result.success && mounted) {
+        Navigator.of(context).pushReplacementNamed('/home');
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text(result.message ?? 'Google sign in successful'),
+            backgroundColor: AppColors.success,
+          ),
+        );
+      } else if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text(result.message ?? 'Google sign in failed'),
+            backgroundColor: AppColors.error,
+          ),
+        );
+      }
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text('Google sign in error. Please try again.'),
+            backgroundColor: AppColors.error,
+          ),
+        );
+      }
+    } finally {
+      if (mounted) setState(() => _isLoading = false);
+    }
+  }
+
+  Future<void> _signInWithFacebook() async {
+    setState(() => _isLoading = true);
+
+    try {
+      final result = await _authService.signInWithFacebook();
+
+      if (result.success && mounted) {
+        Navigator.of(context).pushReplacementNamed('/home');
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text(result.message ?? 'Facebook sign in successful'),
+            backgroundColor: AppColors.success,
+          ),
+        );
+      } else if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text(result.message ?? 'Facebook sign in failed'),
+            backgroundColor: AppColors.error,
+          ),
+        );
+      }
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text('Facebook sign in error. Please try again.'),
             backgroundColor: AppColors.error,
           ),
         );
@@ -138,14 +212,16 @@ class _RegisterScreenState extends State<RegisterScreen> {
                 child: LinearProgressIndicator(
                   value: (_currentStep + 1) / 3,
                   backgroundColor: AppColors.border.withOpacity(0.3),
-                  valueColor: const AlwaysStoppedAnimation<Color>(AppColors.primary),
+                  valueColor:
+                      const AlwaysStoppedAnimation<Color>(AppColors.primary),
                 ),
               ),
-              
+
               Expanded(
                 child: PageView(
                   controller: PageController(initialPage: _currentStep),
-                  onPageChanged: (index) => setState(() => _currentStep = index),
+                  onPageChanged: (index) =>
+                      setState(() => _currentStep = index),
                   children: [
                     _buildBasicInfoStep(),
                     _buildAccountStep(),
@@ -153,7 +229,7 @@ class _RegisterScreenState extends State<RegisterScreen> {
                   ],
                 ),
               ),
-              
+
               // Navigation Buttons
               Container(
                 padding: const EdgeInsets.all(16),
@@ -205,7 +281,7 @@ class _RegisterScreenState extends State<RegisterScreen> {
             style: AppStyles.bodyMedium,
           ),
           const SizedBox(height: 32),
-          
+
           CustomTextField(
             label: 'Full Name',
             hintText: 'Enter your full name',
@@ -218,9 +294,9 @@ class _RegisterScreenState extends State<RegisterScreen> {
               return null;
             },
           ),
-          
+
           const SizedBox(height: 16),
-          
+
           CustomTextField(
             label: 'Email Address',
             hintText: 'Enter your email address',
@@ -237,9 +313,9 @@ class _RegisterScreenState extends State<RegisterScreen> {
               return null;
             },
           ),
-          
+
           const SizedBox(height: 16),
-          
+
           CustomTextField(
             label: 'Phone Number',
             hintText: 'Enter your phone number',
@@ -256,26 +332,70 @@ class _RegisterScreenState extends State<RegisterScreen> {
               return null;
             },
           ),
-          
+
           const SizedBox(height: 24),
-          
+
           Text(
             'I want to:',
             style: AppStyles.bodyMedium.copyWith(fontWeight: FontWeight.w600),
           ),
-          
+
           const SizedBox(height: 12),
-          
+
           ...UserRole.values.map((role) => RadioListTile<UserRole>(
-            title: Text(_getRoleTitle(role)),
-            subtitle: Text(_getRoleSubtitle(role)),
-            value: role,
-            groupValue: _selectedRole,
-            onChanged: (UserRole? value) {
-              setState(() => _selectedRole = value!);
-            },
-            activeColor: AppColors.primary,
-          )),
+                title: Text(_getRoleTitle(role)),
+                subtitle: Text(_getRoleSubtitle(role)),
+                value: role,
+                groupValue: _selectedRole,
+                onChanged: (UserRole? value) {
+                  setState(() => _selectedRole = value!);
+                },
+                activeColor: AppColors.primary,
+              )),
+
+          const SizedBox(height: 32),
+
+          // Divider
+          Row(
+            children: [
+              const Expanded(child: Divider()),
+              Padding(
+                padding: const EdgeInsets.symmetric(horizontal: 16),
+                child: Text(
+                  'OR',
+                  style: AppStyles.bodySmall.copyWith(
+                    color: AppColors.textSecondary,
+                  ),
+                ),
+              ),
+              const Expanded(child: Divider()),
+            ],
+          ),
+
+          const SizedBox(height: 24),
+
+          // Social Login Buttons
+          Row(
+            children: [
+              Expanded(
+                child: _buildSocialButton(
+                  'Google',
+                  Icons.g_mobiledata,
+                  const Color(0xFF4285F4),
+                  _signInWithGoogle,
+                ),
+              ),
+              const SizedBox(width: 12),
+              Expanded(
+                child: _buildSocialButton(
+                  'Facebook',
+                  Icons.facebook,
+                  const Color(0xFF1877F2),
+                  _signInWithFacebook,
+                ),
+              ),
+            ],
+          ),
         ],
       ),
     );
@@ -297,7 +417,6 @@ class _RegisterScreenState extends State<RegisterScreen> {
             style: AppStyles.bodyMedium,
           ),
           const SizedBox(height: 32),
-          
           CustomTextField(
             label: 'Password',
             hintText: 'Enter your password',
@@ -314,9 +433,7 @@ class _RegisterScreenState extends State<RegisterScreen> {
               return null;
             },
           ),
-          
           const SizedBox(height: 16),
-          
           CustomTextField(
             label: 'Confirm Password',
             hintText: 'Confirm your password',
@@ -333,9 +450,7 @@ class _RegisterScreenState extends State<RegisterScreen> {
               return null;
             },
           ),
-          
           const SizedBox(height: 24),
-          
           Container(
             padding: const EdgeInsets.all(16),
             decoration: BoxDecoration(
@@ -362,7 +477,8 @@ class _RegisterScreenState extends State<RegisterScreen> {
                 const SizedBox(height: 8),
                 Text(
                   '• At least 6 characters long\n• Use a combination of letters and numbers\n• Avoid using personal information',
-                  style: AppStyles.bodySmall.copyWith(color: AppColors.textSecondary),
+                  style: AppStyles.bodySmall
+                      .copyWith(color: AppColors.textSecondary),
                 ),
               ],
             ),
@@ -384,13 +500,13 @@ class _RegisterScreenState extends State<RegisterScreen> {
           ),
           const SizedBox(height: 8),
           Text(
-            _selectedRole == UserRole.seller 
+            _selectedRole == UserRole.seller
                 ? 'Additional verification required for sellers'
                 : 'Almost done! Please review and confirm',
             style: AppStyles.bodyMedium,
           ),
           const SizedBox(height: 32),
-          
+
           if (_selectedRole == UserRole.seller) ...[
             CustomTextField(
               label: 'Aadhaar Number',
@@ -408,9 +524,7 @@ class _RegisterScreenState extends State<RegisterScreen> {
                 return null;
               },
             ),
-            
             const SizedBox(height: 24),
-            
             Container(
               padding: const EdgeInsets.all(16),
               decoration: BoxDecoration(
@@ -437,15 +551,16 @@ class _RegisterScreenState extends State<RegisterScreen> {
                   const SizedBox(height: 8),
                   Text(
                     '• Your account will be reviewed by our team\n• You may be contacted for additional verification\n• This process helps maintain quality and trust',
-                    style: AppStyles.bodySmall.copyWith(color: AppColors.textSecondary),
+                    style: AppStyles.bodySmall
+                        .copyWith(color: AppColors.textSecondary),
                   ),
                 ],
               ),
             ),
           ],
-          
+
           const SizedBox(height: 32),
-          
+
           // Terms and Conditions
           CheckboxListTile(
             value: _agreeToTerms,
@@ -478,9 +593,9 @@ class _RegisterScreenState extends State<RegisterScreen> {
             activeColor: AppColors.primary,
             controlAffinity: ListTileControlAffinity.leading,
           ),
-          
+
           const SizedBox(height: 16),
-          
+
           // Account Summary
           Container(
             padding: const EdgeInsets.all(16),
@@ -500,7 +615,8 @@ class _RegisterScreenState extends State<RegisterScreen> {
               children: [
                 Text(
                   'Account Summary',
-                  style: AppStyles.bodyMedium.copyWith(fontWeight: FontWeight.w600),
+                  style: AppStyles.bodyMedium
+                      .copyWith(fontWeight: FontWeight.w600),
                 ),
                 const SizedBox(height: 12),
                 _buildSummaryRow('Name', _nameController.text),
@@ -525,7 +641,8 @@ class _RegisterScreenState extends State<RegisterScreen> {
             width: 80,
             child: Text(
               '$label:',
-              style: AppStyles.bodySmall.copyWith(color: AppColors.textSecondary),
+              style:
+                  AppStyles.bodySmall.copyWith(color: AppColors.textSecondary),
             ),
           ),
           Expanded(
@@ -559,5 +676,47 @@ class _RegisterScreenState extends State<RegisterScreen> {
       case UserRole.both:
         return 'Full marketplace access as buyer and seller';
     }
+  }
+
+  Widget _buildSocialButton(
+      String label, IconData icon, Color color, VoidCallback onPressed) {
+    return Container(
+      decoration: BoxDecoration(
+        color: color.withOpacity(0.1),
+        borderRadius: BorderRadius.circular(AppStyles.radiusLarge),
+        border: Border.all(color: color.withOpacity(0.3)),
+      ),
+      child: Material(
+        color: Colors.transparent,
+        child: InkWell(
+          onTap: onPressed,
+          borderRadius: BorderRadius.circular(AppStyles.radiusLarge),
+          child: Container(
+            padding: const EdgeInsets.symmetric(
+              horizontal: AppStyles.spacing16,
+              vertical: AppStyles.spacing12,
+            ),
+            child: Row(
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: [
+                Icon(
+                  icon,
+                  color: color,
+                  size: 20,
+                ),
+                const SizedBox(width: AppStyles.spacing8),
+                Text(
+                  label,
+                  style: AppStyles.bodyMedium.copyWith(
+                    color: color,
+                    fontWeight: FontWeight.w600,
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ),
+      ),
+    );
   }
 }

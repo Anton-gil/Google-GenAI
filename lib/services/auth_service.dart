@@ -64,6 +64,58 @@ class AuthService {
     );
   }
 
+  // Google Sign In
+  Future<AuthResult> signInWithGoogle() async {
+    await Future.delayed(const Duration(seconds: 2));
+
+    // Mock Google sign in
+    final user = User(
+      id: 'google_user_${DateTime.now().millisecondsSinceEpoch}',
+      name: 'Google User',
+      email: 'user@gmail.com',
+      phone: '+91 98765 43210',
+      role: UserRole.both,
+      verificationStatus: VerificationStatus.verified,
+      createdAt: DateTime.now(),
+      profileImageUrl: 'https://via.placeholder.com/150/4285F4/FFFFFF?text=G',
+    );
+
+    _currentUser = user;
+    _isLoggedIn = true;
+
+    return AuthResult(
+      success: true,
+      message: 'Google sign in successful',
+      user: user,
+    );
+  }
+
+  // Facebook Sign In
+  Future<AuthResult> signInWithFacebook() async {
+    await Future.delayed(const Duration(seconds: 2));
+
+    // Mock Facebook sign in
+    final user = User(
+      id: 'facebook_user_${DateTime.now().millisecondsSinceEpoch}',
+      name: 'Facebook User',
+      email: 'user@facebook.com',
+      phone: '+91 98765 43210',
+      role: UserRole.both,
+      verificationStatus: VerificationStatus.verified,
+      createdAt: DateTime.now(),
+      profileImageUrl: 'https://via.placeholder.com/150/1877F2/FFFFFF?text=F',
+    );
+
+    _currentUser = user;
+    _isLoggedIn = true;
+
+    return AuthResult(
+      success: true,
+      message: 'Facebook sign in successful',
+      user: user,
+    );
+  }
+
   Future<AuthResult> register({
     required String name,
     required String email,
@@ -89,7 +141,8 @@ class AuthService {
       );
     }
 
-    if (role == UserRole.seller && (aadhaarNumber == null || aadhaarNumber.length != 12)) {
+    if (role == UserRole.seller &&
+        (aadhaarNumber == null || aadhaarNumber.length != 12)) {
       return const AuthResult(
         success: false,
         message: 'Valid Aadhaar number required for sellers',
@@ -103,8 +156,8 @@ class AuthService {
       email: email,
       phone: phone,
       role: role,
-      verificationStatus: role == UserRole.seller 
-          ? VerificationStatus.pending 
+      verificationStatus: role == UserRole.seller
+          ? VerificationStatus.pending
           : VerificationStatus.verified,
       aadhaarNumber: aadhaarNumber,
       createdAt: DateTime.now(),
@@ -214,15 +267,19 @@ class AuthService {
 
   String _extractNameFromEmail(String email) {
     final username = email.split('@')[0];
-    return username.replaceAll('.', ' ').replaceAll('_', ' ').split(' ')
-        .map((word) => word.isEmpty ? '' : word[0].toUpperCase() + word.substring(1))
+    return username
+        .replaceAll('.', ' ')
+        .replaceAll('_', ' ')
+        .split(' ')
+        .map((word) =>
+            word.isEmpty ? '' : word[0].toUpperCase() + word.substring(1))
         .join(' ');
   }
 
   // Mock method for getting user's selling statistics
   Future<Map<String, int>> getUserStats() async {
     await Future.delayed(const Duration(milliseconds: 300));
-    
+
     return {
       'totalProducts': 12,
       'totalSales': 45,
@@ -234,13 +291,14 @@ class AuthService {
   // Mock method for getting verification progress
   double getVerificationProgress() {
     if (_currentUser == null) return 0.0;
-    
+
     double progress = 0.3; // Basic info
-    
+
     if (_currentUser!.phone.isNotEmpty) progress += 0.2; // Phone verified
     if (_currentUser!.aadhaarNumber != null) progress += 0.2; // Aadhaar added
-    if (_currentUser!.verificationStatus != VerificationStatus.pending) progress += 0.3; // Video submitted
-    
+    if (_currentUser!.verificationStatus != VerificationStatus.pending)
+      progress += 0.3; // Video submitted
+
     return progress;
   }
 
