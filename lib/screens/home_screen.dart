@@ -6,7 +6,6 @@ import '../services/auth_service.dart';
 import '../utils/app_colors.dart';
 import '../utils/app_styles.dart';
 import '../widgets/product_card.dart';
-import 'login_screen.dart';
 import 'seller_dashboard_screen.dart';
 import 'chat_screen.dart';
 import 'product_detail_screen.dart';
@@ -28,6 +27,10 @@ class _HomeScreenState extends State<HomeScreen> {
   bool _isLoading = true;
   String _searchQuery = '';
   Set<String> _favoriteProductIds = {};
+
+  // Filter variables
+  double _minPrice = 0;
+  double _maxPrice = 10000;
 
   @override
   void initState() {
@@ -149,7 +152,10 @@ class _HomeScreenState extends State<HomeScreen> {
         final matchesCategory =
             _selectedCategory == null || product.category == _selectedCategory;
 
-        return matchesSearch && matchesCategory;
+        final matchesPrice =
+            product.price >= _minPrice && product.price <= _maxPrice;
+
+        return matchesSearch && matchesCategory && matchesPrice;
       }).toList();
     });
   }
@@ -191,7 +197,6 @@ class _HomeScreenState extends State<HomeScreen> {
 
   @override
   Widget build(BuildContext context) {
-    final isLoggedIn = _authService.isLoggedIn;
     final user = _authService.currentUser;
 
     return Scaffold(
@@ -213,35 +218,24 @@ class _HomeScreenState extends State<HomeScreen> {
         backgroundColor: Colors.transparent,
         elevation: 0,
         actions: [
-          if (isLoggedIn) ...[
+          IconButton(
+            icon: const Icon(Icons.chat_bubble_outline),
+            onPressed: () {
+              Navigator.of(context).push(
+                MaterialPageRoute(builder: (context) => const ChatScreen()),
+              );
+            },
+          ),
+          if (user?.role == UserRole.seller || user?.role == UserRole.both)
             IconButton(
-              icon: const Icon(Icons.chat_bubble_outline),
+              icon: const Icon(Icons.dashboard),
               onPressed: () {
                 Navigator.of(context).push(
-                  MaterialPageRoute(builder: (context) => const ChatScreen()),
+                  MaterialPageRoute(
+                      builder: (context) => const SellerDashboardScreen()),
                 );
               },
             ),
-            if (user?.role == UserRole.seller || user?.role == UserRole.both)
-              IconButton(
-                icon: const Icon(Icons.dashboard),
-                onPressed: () {
-                  Navigator.of(context).push(
-                    MaterialPageRoute(
-                        builder: (context) => const SellerDashboardScreen()),
-                  );
-                },
-              ),
-          ] else ...[
-            TextButton(
-              onPressed: () {
-                Navigator.of(context).push(
-                  MaterialPageRoute(builder: (context) => const LoginScreen()),
-                );
-              },
-              child: const Text('Login'),
-            ),
-          ],
         ],
       ),
       body: _isLoading
@@ -260,20 +254,17 @@ class _HomeScreenState extends State<HomeScreen> {
                 ],
               ),
             ),
-      floatingActionButton: !isLoggedIn
-          ? null
-          : user?.role == UserRole.buyer
-              ? FloatingActionButton(
-                  onPressed: () {
-                    Navigator.of(context).push(
-                      MaterialPageRoute(
-                          builder: (context) => const ChatScreen()),
-                    );
-                  },
-                  backgroundColor: AppColors.accent,
-                  child: const Icon(Icons.chat, color: AppColors.textOnPrimary),
-                )
-              : null,
+      floatingActionButton: user?.role == UserRole.buyer
+          ? FloatingActionButton(
+              onPressed: () {
+                Navigator.of(context).push(
+                  MaterialPageRoute(builder: (context) => const ChatScreen()),
+                );
+              },
+              backgroundColor: AppColors.accent,
+              child: const Icon(Icons.chat, color: AppColors.textOnPrimary),
+            )
+          : null,
     );
   }
 
@@ -508,79 +499,194 @@ class _HomeScreenState extends State<HomeScreen> {
   void _showFilterDialog() {
     showModalBottomSheet(
       context: context,
+      isScrollControlled: true,
       shape: const RoundedRectangleBorder(
         borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
       ),
-      builder: (context) => Container(
-        padding: const EdgeInsets.all(20),
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Row(
-              mainAxisAlignment: MainAxisAlignment.spaceBetween,
-              children: [
-                const Text(
-                  'Filter Products',
-                  style: TextStyle(
-                    fontSize: 20,
-                    fontWeight: FontWeight.bold,
+      builder: (context) => StatefulBuilder(
+        builder: (context, setModalState) => Container(
+          padding: const EdgeInsets.all(20),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Row(
+                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                children: [
+                  const Text(
+                    'Filter Products',
+                    style: TextStyle(
+                      fontSize: 20,
+                      fontWeight: FontWeight.bold,
+                    ),
                   ),
-                ),
-                IconButton(
-                  onPressed: () => Navigator.pop(context),
-                  icon: const Icon(Icons.close),
-                ),
-              ],
-            ),
-            const SizedBox(height: 20),
-            const Text(
-              'Price Range',
-              style: TextStyle(
-                fontSize: 16,
-                fontWeight: FontWeight.w600,
+                  IconButton(
+                    onPressed: () => Navigator.pop(context),
+                    icon: const Icon(Icons.close),
+                  ),
+                ],
               ),
-            ),
-            const SizedBox(height: 10),
-            Wrap(
-              spacing: 8,
-              children: [
-                _buildPriceRangeChip('Under ₹500'),
-                _buildPriceRangeChip('₹500 - ₹1000'),
-                _buildPriceRangeChip('Above ₹1000'),
-              ],
-            ),
-            const SizedBox(height: 30),
-            SizedBox(
-              width: double.infinity,
-              child: ElevatedButton(
-                onPressed: () {
-                  Navigator.pop(context);
+              const SizedBox(height: 20),
+
+              const Text(
+                'Price Range',
+                style: TextStyle(
+                  fontSize: 16,
+                  fontWeight: FontWeight.w600,
+                ),
+              ),
+              const SizedBox(height: 10),
+
+              // Price Range Slider
+              RangeSlider(
+                values: RangeValues(_minPrice, _maxPrice),
+                min: 0,
+                max: 10000,
+                divisions: 20,
+                labels: RangeLabels(
+                  '₹${_minPrice.toInt()}',
+                  '₹${_maxPrice.toInt()}',
+                ),
+                onChanged: (RangeValues values) {
+                  setModalState(() {
+                    _minPrice = values.start;
+                    _maxPrice = values.end;
+                  });
                 },
-                style: ElevatedButton.styleFrom(
-                  backgroundColor: AppColors.primary,
-                  foregroundColor: AppColors.textOnPrimary,
-                ),
-                child: const Text('Apply Filters'),
               ),
-            ),
-          ],
+
+              const SizedBox(height: 10),
+              Wrap(
+                spacing: 8,
+                children: [
+                  _buildPriceRangeChip('Under ₹500', 0, 500),
+                  _buildPriceRangeChip('₹500 - ₹1000', 500, 1000),
+                  _buildPriceRangeChip('₹1000 - ₹2000', 1000, 2000),
+                  _buildPriceRangeChip('Above ₹2000', 2000, 10000),
+                ],
+              ),
+
+              const SizedBox(height: 20),
+
+              const Text(
+                'Quick Filters',
+                style: TextStyle(
+                  fontSize: 16,
+                  fontWeight: FontWeight.w600,
+                ),
+              ),
+              const SizedBox(height: 10),
+              Wrap(
+                spacing: 8,
+                children: [
+                  _buildQuickFilterChip('AI Enhanced', () {
+                    setModalState(() {
+                      _filteredProducts = _products
+                          .where((product) => product.suggestedPrice != null)
+                          .toList();
+                    });
+                  }),
+                  _buildQuickFilterChip('Verified Artisans', () {
+                    setModalState(() {
+                      _filteredProducts = _products
+                          .where((product) =>
+                              product.sellerName.contains('Verified'))
+                          .toList();
+                    });
+                  }),
+                  _buildQuickFilterChip('New Arrivals', () {
+                    setModalState(() {
+                      _filteredProducts = _products
+                          .where((product) => product.createdAt.isAfter(
+                              DateTime.now().subtract(const Duration(days: 7))))
+                          .toList();
+                    });
+                  }),
+                ],
+              ),
+
+              const SizedBox(height: 30),
+
+              Row(
+                children: [
+                  Expanded(
+                    child: OutlinedButton(
+                      onPressed: () {
+                        setModalState(() {
+                          _minPrice = 0;
+                          _maxPrice = 10000;
+                          _selectedCategory = null;
+                          _searchQuery = '';
+                          _searchController.clear();
+                        });
+                        _filterProducts();
+                        Navigator.pop(context);
+                      },
+                      child: const Text('Clear All'),
+                    ),
+                  ),
+                  const SizedBox(width: 16),
+                  Expanded(
+                    child: ElevatedButton(
+                      onPressed: () {
+                        _filterProducts();
+                        Navigator.pop(context);
+                      },
+                      style: ElevatedButton.styleFrom(
+                        backgroundColor: AppColors.primary,
+                        foregroundColor: AppColors.textOnPrimary,
+                      ),
+                      child: const Text('Apply Filters'),
+                    ),
+                  ),
+                ],
+              ),
+            ],
+          ),
         ),
       ),
     );
   }
 
-  Widget _buildPriceRangeChip(String label) {
+  Widget _buildPriceRangeChip(String label, double minPrice, double maxPrice) {
     return FilterChip(
       label: Text(label),
       onSelected: (selected) {
-        // TODO: Implement price range filter
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('Filter: $label - Coming soon!')),
-        );
+        setState(() {
+          _minPrice = minPrice;
+          _maxPrice = maxPrice;
+        });
+        _filterProducts();
       },
       backgroundColor: AppColors.surface,
+      selectedColor: AppColors.primary.withOpacity(0.1),
+      labelStyle: const TextStyle(
+        color: AppColors.textSecondary,
+        fontWeight: FontWeight.normal,
+      ),
       side: const BorderSide(color: AppColors.border),
+      shape: RoundedRectangleBorder(
+        borderRadius: BorderRadius.circular(AppStyles.radiusLarge),
+      ),
+    );
+  }
+
+  Widget _buildQuickFilterChip(String label, VoidCallback onTap) {
+    return FilterChip(
+      label: Text(label),
+      onSelected: (selected) {
+        onTap();
+      },
+      backgroundColor: AppColors.surface,
+      selectedColor: AppColors.accent.withOpacity(0.1),
+      labelStyle: const TextStyle(
+        color: AppColors.textSecondary,
+        fontWeight: FontWeight.normal,
+      ),
+      side: const BorderSide(color: AppColors.border),
+      shape: RoundedRectangleBorder(
+        borderRadius: BorderRadius.circular(AppStyles.radiusLarge),
+      ),
     );
   }
 

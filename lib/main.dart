@@ -2,6 +2,8 @@ import 'package:flutter/material.dart';
 import 'screens/home_screen.dart';
 import 'screens/cart_screen.dart';
 import 'screens/profile_screen.dart';
+import 'screens/login_screen.dart';
+import 'services/auth_service.dart';
 import 'utils/app_colors.dart';
 import 'utils/app_styles.dart';
 
@@ -150,7 +152,35 @@ class ArtisanMarketplaceApp extends StatelessWidget {
           behavior: SnackBarBehavior.floating,
         ),
       ),
-      home: const MainNavigation(),
+      home: const AuthWrapper(),
+    );
+  }
+}
+
+class AuthWrapper extends StatefulWidget {
+  const AuthWrapper({super.key});
+
+  @override
+  State<AuthWrapper> createState() => _AuthWrapperState();
+}
+
+class _AuthWrapperState extends State<AuthWrapper> {
+  final _authService = AuthService();
+
+  @override
+  Widget build(BuildContext context) {
+    return StreamBuilder<bool>(
+      stream: Stream.periodic(const Duration(milliseconds: 100))
+          .map((_) => _authService.isLoggedIn),
+      builder: (context, snapshot) {
+        final isLoggedIn = snapshot.data ?? false;
+
+        if (isLoggedIn) {
+          return const MainNavigation();
+        } else {
+          return const LoginScreen();
+        }
+      },
     );
   }
 }

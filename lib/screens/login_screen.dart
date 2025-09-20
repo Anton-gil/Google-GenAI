@@ -21,6 +21,7 @@ class _LoginScreenState extends State<LoginScreen> {
   final _authService = AuthService();
 
   bool _isLoading = false;
+  bool _agreeToTerms = false;
 
   @override
   void dispose() {
@@ -32,6 +33,16 @@ class _LoginScreenState extends State<LoginScreen> {
   Future<void> _login() async {
     if (!_formKey.currentState!.validate()) return;
 
+    if (!_agreeToTerms) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('Please agree to the terms and conditions'),
+          backgroundColor: AppColors.error,
+        ),
+      );
+      return;
+    }
+
     setState(() => _isLoading = true);
 
     try {
@@ -41,7 +52,8 @@ class _LoginScreenState extends State<LoginScreen> {
       );
 
       if (result.success && mounted) {
-        Navigator.of(context).pushReplacementNamed('/home');
+        // The AuthWrapper will automatically detect the login state change
+        // No need to navigate manually
       } else if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
@@ -71,7 +83,7 @@ class _LoginScreenState extends State<LoginScreen> {
       final result = await _authService.signInWithGoogle();
 
       if (result.success && mounted) {
-        Navigator.of(context).pushReplacementNamed('/home');
+        // The AuthWrapper will automatically detect the login state change
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
             content: Text(result.message ?? 'Google sign in successful'),
@@ -107,7 +119,7 @@ class _LoginScreenState extends State<LoginScreen> {
       final result = await _authService.signInWithFacebook();
 
       if (result.success && mounted) {
-        Navigator.of(context).pushReplacementNamed('/home');
+        // The AuthWrapper will automatically detect the login state change
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
             content: Text(result.message ?? 'Facebook sign in successful'),
@@ -248,6 +260,42 @@ class _LoginScreenState extends State<LoginScreen> {
                   ),
                 ),
 
+                const SizedBox(height: 16),
+
+                // Terms and Conditions Checkbox
+                CheckboxListTile(
+                  value: _agreeToTerms,
+                  onChanged: (bool? value) {
+                    setState(() => _agreeToTerms = value ?? false);
+                  },
+                  title: RichText(
+                    text: TextSpan(
+                      style: AppStyles.bodyMedium,
+                      children: [
+                        const TextSpan(text: 'I agree to the '),
+                        TextSpan(
+                          text: 'Terms & Conditions',
+                          style: AppStyles.bodyMedium.copyWith(
+                            color: AppColors.primary,
+                            decoration: TextDecoration.underline,
+                          ),
+                        ),
+                        const TextSpan(text: ' and '),
+                        TextSpan(
+                          text: 'Privacy Policy',
+                          style: AppStyles.bodyMedium.copyWith(
+                            color: AppColors.primary,
+                            decoration: TextDecoration.underline,
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                  activeColor: AppColors.primary,
+                  controlAffinity: ListTileControlAffinity.leading,
+                  contentPadding: EdgeInsets.zero,
+                ),
+
                 const SizedBox(height: 24),
 
                 // Login Button
@@ -308,7 +356,8 @@ class _LoginScreenState extends State<LoginScreen> {
                   text: 'Browse as Guest',
                   icon: Icons.visibility_outlined,
                   onPressed: () {
-                    Navigator.of(context).pushReplacementNamed('/home');
+                    // For guest browsing, we'll create a temporary user
+                    _authService.login('guest@example.com', 'guest123');
                   },
                 ),
 

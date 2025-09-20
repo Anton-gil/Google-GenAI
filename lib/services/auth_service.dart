@@ -43,7 +43,32 @@ class AuthService {
       );
     }
 
-    // Mock user creation
+    // Test credentials for development
+    if (email == 'seraphex@gmail.com' && password == 'searaphex') {
+      final user = User(
+        id: 'test_user_001',
+        name: 'Seraphex User',
+        email: email,
+        phone: '+91 98765 43210',
+        role: UserRole.both,
+        verificationStatus: VerificationStatus.verified,
+        createdAt: DateTime.now().subtract(const Duration(days: 30)),
+        isVerifiedArtisan: true,
+        bio: 'Test user for development purposes',
+        address: 'Test Address, Test City, Test State',
+      );
+
+      _currentUser = user;
+      _isLoggedIn = true;
+
+      return AuthResult(
+        success: true,
+        message: 'Login successful',
+        user: user,
+      );
+    }
+
+    // For other emails, create a new user
     final user = User(
       id: 'user_${DateTime.now().millisecondsSinceEpoch}',
       name: _extractNameFromEmail(email),

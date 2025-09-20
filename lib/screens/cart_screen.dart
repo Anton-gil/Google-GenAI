@@ -4,6 +4,7 @@ import '../models/product.dart';
 import '../widgets/custom_button.dart';
 import '../utils/app_colors.dart';
 import '../utils/app_styles.dart';
+import 'payment_screen.dart';
 
 class CartItem {
   final Product product;
@@ -31,49 +32,7 @@ class _CartScreenState extends State<CartScreen> {
   @override
   void initState() {
     super.initState();
-    _loadSampleCartItems();
-  }
-
-  void _loadSampleCartItems() {
-    // Add some sample items for demonstration
-    cartItems = [
-      CartItem(
-        product: Product(
-          id: "1",
-          name: "Handmade Pottery Vase",
-          description:
-              "Beautiful ceramic vase with intricate traditional patterns.",
-          imageUrl: "https://picsum.photos/400/400?pottery",
-          imageUrls: const ["https://picsum.photos/400/400?pottery"],
-          price: 650,
-          sellerId: "seller1",
-          sellerName: "Ramesh Kumar",
-          category: ProductCategory.pottery,
-          tags: const ["handmade", "pottery", "traditional", "ceramic"],
-          createdAt: DateTime.now().subtract(const Duration(days: 2)),
-          updatedAt: DateTime.now().subtract(const Duration(hours: 6)),
-        ),
-        quantity: 2,
-      ),
-      CartItem(
-        product: Product(
-          id: "2",
-          name: "Embroidered Silk Dupatta",
-          description:
-              "Exquisite handwoven silk dupatta featuring traditional embroidery.",
-          imageUrl: "https://picsum.photos/400/400?silk",
-          imageUrls: const ["https://picsum.photos/400/400?silk"],
-          price: 1200,
-          sellerId: "seller2",
-          sellerName: "Meera Devi",
-          category: ProductCategory.textiles,
-          tags: const ["silk", "embroidered", "dupatta", "traditional"],
-          createdAt: DateTime.now().subtract(const Duration(days: 1)),
-          updatedAt: DateTime.now().subtract(const Duration(hours: 2)),
-        ),
-        quantity: 1,
-      ),
-    ];
+    // Cart starts empty - no prepopulated items
   }
 
   double get totalAmount {
@@ -106,29 +65,12 @@ class _CartScreenState extends State<CartScreen> {
       return;
     }
 
-    showDialog(
-      context: context,
-      builder: (context) => AlertDialog(
-        title: const Text('Checkout'),
-        content: Text('Total amount: ₹${totalAmount.toStringAsFixed(2)}'),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(context),
-            child: const Text('Cancel'),
-          ),
-          PrimaryButton(
-            text: 'Pay Now',
-            onPressed: () {
-              Navigator.pop(context);
-              // Implement payment logic
-              ScaffoldMessenger.of(context).showSnackBar(
-                const SnackBar(
-                    content: Text('Payment integration coming soon!')),
-              );
-            },
-            isFullWidth: false,
-          ),
-        ],
+    Navigator.of(context).push(
+      MaterialPageRoute(
+        builder: (context) => PaymentScreen(
+          cartItems: cartItems,
+          totalAmount: totalAmount,
+        ),
       ),
     );
   }

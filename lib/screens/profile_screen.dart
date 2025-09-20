@@ -1,6 +1,7 @@
 // lib/screens/profile_screen.dart
 import 'package:flutter/material.dart';
 import '../models/user.dart';
+import '../services/auth_service.dart';
 import '../widgets/custom_button.dart';
 import '../widgets/custom_textfield.dart';
 import '../utils/app_colors.dart';
@@ -16,6 +17,7 @@ class ProfileScreen extends StatefulWidget {
 class _ProfileScreenState extends State<ProfileScreen> {
   late User currentUser;
   bool _isEditing = false;
+  final _authService = AuthService();
 
   final _nameController = TextEditingController();
   final _phoneController = TextEditingController();
@@ -29,19 +31,20 @@ class _ProfileScreenState extends State<ProfileScreen> {
   }
 
   void _loadUserProfile() {
-    // Initialize with sample user data - replace with actual user data
-    currentUser = User(
-      id: '1',
-      name: 'Artisan Name',
-      email: 'artisan@email.com',
-      phone: '+91 9876543210',
-      role: UserRole.both,
-      verificationStatus: VerificationStatus.verified,
-      address: 'Local Address, City, State',
-      bio: 'Traditional craftsperson specializing in handmade items',
-      createdAt: DateTime.now().subtract(const Duration(days: 30)),
-      isVerifiedArtisan: true,
-    );
+    // Get current user from auth service
+    currentUser = _authService.currentUser ??
+        User(
+          id: '1',
+          name: 'Artisan Name',
+          email: 'artisan@email.com',
+          phone: '+91 9876543210',
+          role: UserRole.both,
+          verificationStatus: VerificationStatus.verified,
+          address: 'Local Address, City, State',
+          bio: 'Traditional craftsperson specializing in handmade items',
+          createdAt: DateTime.now().subtract(const Duration(days: 30)),
+          isVerifiedArtisan: true,
+        );
 
     _updateControllers();
   }
@@ -106,7 +109,11 @@ class _ProfileScreenState extends State<ProfileScreen> {
           TextButton(
             onPressed: () {
               Navigator.pop(context);
-              Navigator.pushReplacementNamed(context, '/login');
+              _authService.logout();
+              // The AuthWrapper will automatically detect the logout and show login screen
+              ScaffoldMessenger.of(context).showSnackBar(
+                const SnackBar(content: Text('Logout successful')),
+              );
             },
             child: Text(
               'Logout',
@@ -115,6 +122,96 @@ class _ProfileScreenState extends State<ProfileScreen> {
           ),
         ],
       ),
+    );
+  }
+
+  void _changeProfilePicture() {
+    showModalBottomSheet(
+      context: context,
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
+      ),
+      builder: (context) => Container(
+        padding: const EdgeInsets.all(20),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            const Text(
+              'Change Profile Picture',
+              style: TextStyle(
+                fontSize: 20,
+                fontWeight: FontWeight.bold,
+              ),
+            ),
+            const SizedBox(height: 20),
+            Row(
+              mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+              children: [
+                _buildProfilePictureOption(
+                  'Camera',
+                  Icons.camera_alt,
+                  () {
+                    Navigator.pop(context);
+                    ScaffoldMessenger.of(context).showSnackBar(
+                      const SnackBar(
+                          content: Text('Camera feature coming soon!')),
+                    );
+                  },
+                ),
+                _buildProfilePictureOption(
+                  'Gallery',
+                  Icons.photo_library,
+                  () {
+                    Navigator.pop(context);
+                    ScaffoldMessenger.of(context).showSnackBar(
+                      const SnackBar(
+                          content: Text('Gallery feature coming soon!')),
+                    );
+                  },
+                ),
+                _buildProfilePictureOption(
+                  'Remove',
+                  Icons.delete,
+                  () {
+                    Navigator.pop(context);
+                    setState(() {
+                      currentUser = currentUser.copyWith(profileImageUrl: null);
+                    });
+                    ScaffoldMessenger.of(context).showSnackBar(
+                      const SnackBar(content: Text('Profile picture removed')),
+                    );
+                  },
+                ),
+              ],
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildProfilePictureOption(
+      String title, IconData icon, VoidCallback onTap) {
+    return Column(
+      children: [
+        Container(
+          width: 60,
+          height: 60,
+          decoration: BoxDecoration(
+            color: AppColors.primary.withOpacity(0.1),
+            borderRadius: BorderRadius.circular(30),
+          ),
+          child: IconButton(
+            onPressed: onTap,
+            icon: Icon(icon, color: AppColors.primary, size: 30),
+          ),
+        ),
+        const SizedBox(height: 8),
+        Text(
+          title,
+          style: AppStyles.bodySmall,
+        ),
+      ],
     );
   }
 
@@ -188,24 +285,27 @@ class _ProfileScreenState extends State<ProfileScreen> {
                     ),
                   ],
                 ),
-                child: CircleAvatar(
-                  radius: 50,
-                  backgroundColor: AppColors.textOnPrimary,
-                  backgroundImage: currentUser.profileImageUrl != null
-                      ? NetworkImage(currentUser.profileImageUrl!)
-                      : null,
-                  child: currentUser.profileImageUrl == null
-                      ? Text(
-                          currentUser.name.isNotEmpty
-                              ? currentUser.name[0].toUpperCase()
-                              : 'A',
-                          style: TextStyle(
-                            color: AppColors.primary,
-                            fontSize: 28,
-                            fontWeight: FontWeight.bold,
-                          ),
-                        )
-                      : null,
+                child: GestureDetector(
+                  onTap: _changeProfilePicture,
+                  child: CircleAvatar(
+                    radius: 50,
+                    backgroundColor: AppColors.textOnPrimary,
+                    backgroundImage: currentUser.profileImageUrl != null
+                        ? NetworkImage(currentUser.profileImageUrl!)
+                        : null,
+                    child: currentUser.profileImageUrl == null
+                        ? Text(
+                            currentUser.name.isNotEmpty
+                                ? currentUser.name[0].toUpperCase()
+                                : 'A',
+                            style: TextStyle(
+                              color: AppColors.primary,
+                              fontSize: 28,
+                              fontWeight: FontWeight.bold,
+                            ),
+                          )
+                        : null,
+                  ),
                 ),
               ),
               if (currentUser.isVerifiedArtisan)
