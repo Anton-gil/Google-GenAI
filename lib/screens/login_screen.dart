@@ -192,7 +192,7 @@ class _LoginScreenState extends State<LoginScreen> {
                         ),
                       ),
                       const SizedBox(height: 8),
-                      Text(
+                      const Text(
                         'Sign in to your artisan marketplace account',
                         style: AppStyles.bodyMedium,
                         textAlign: TextAlign.center,
@@ -367,7 +367,7 @@ class _LoginScreenState extends State<LoginScreen> {
                 Row(
                   mainAxisAlignment: MainAxisAlignment.center,
                   children: [
-                    Text(
+                    const Text(
                       "Don't have an account? ",
                       style: AppStyles.bodyMedium,
                     ),
@@ -411,7 +411,7 @@ class _LoginScreenState extends State<LoginScreen> {
                         ),
                       ),
                       const SizedBox(height: 4),
-                      Text(
+                      const Text(
                         'Connect with local artisans and discover unique handmade products',
                         style: AppStyles.bodySmall,
                         textAlign: TextAlign.center,

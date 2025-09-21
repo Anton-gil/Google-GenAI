@@ -6,8 +6,14 @@ import 'screens/login_screen.dart';
 import 'services/auth_service.dart';
 import 'utils/app_colors.dart';
 import 'utils/app_styles.dart';
+import 'package:firebase_core/firebase_core.dart';
+import 'firebase_options.dart';
 
-void main() {
+void main() async {
+  WidgetsFlutterBinding.ensureInitialized();
+  await Firebase.initializeApp(
+    options: DefaultFirebaseOptions.currentPlatform,
+  );
   runApp(const ArtisanMarketplaceApp());
 }
 
@@ -20,8 +26,7 @@ class ArtisanMarketplaceApp extends StatelessWidget {
       title: 'Artisan Marketplace',
       debugShowCheckedModeBanner: false,
       theme: ThemeData(
-        // Color scheme
-        primarySwatch: MaterialColor(AppColors.primary.value, {
+        primarySwatch: MaterialColor(AppColors.primary.value, const {
           50: AppColors.primaryLight,
           100: AppColors.primaryLight,
           200: AppColors.primaryLight,
@@ -35,8 +40,6 @@ class ArtisanMarketplaceApp extends StatelessWidget {
         }),
         primaryColor: AppColors.primary,
         scaffoldBackgroundColor: AppColors.background,
-
-        // App bar theme
         appBarTheme: const AppBarTheme(
           backgroundColor: AppColors.primary,
           foregroundColor: AppColors.textOnPrimary,
@@ -48,8 +51,6 @@ class ArtisanMarketplaceApp extends StatelessWidget {
             fontWeight: FontWeight.w600,
           ),
         ),
-
-        // Bottom navigation bar theme
         bottomNavigationBarTheme: const BottomNavigationBarThemeData(
           backgroundColor: AppColors.surface,
           selectedItemColor: AppColors.primary,
@@ -57,32 +58,22 @@ class ArtisanMarketplaceApp extends StatelessWidget {
           type: BottomNavigationBarType.fixed,
           elevation: 8,
         ),
-
-        // Card theme
-        cardTheme: CardThemeData(
+        cardTheme: CardTheme(
           color: AppColors.surface,
           elevation: 2,
           shape: RoundedRectangleBorder(
             borderRadius: BorderRadius.circular(AppStyles.radiusLarge),
           ),
         ),
-
-        // Elevated button theme
         elevatedButtonTheme: ElevatedButtonThemeData(
           style: AppStyles.primaryButtonStyle,
         ),
-
-        // Text button theme
         textButtonTheme: TextButtonThemeData(
           style: AppStyles.textButtonStyle,
         ),
-
-        // Outlined button theme
         outlinedButtonTheme: OutlinedButtonThemeData(
           style: AppStyles.outlinedButtonStyle,
         ),
-
-        // Input decoration theme
         inputDecorationTheme: InputDecorationTheme(
           filled: true,
           fillColor: AppColors.surface,
@@ -107,8 +98,6 @@ class ArtisanMarketplaceApp extends StatelessWidget {
             vertical: AppStyles.spacing12,
           ),
         ),
-
-        // Text theme
         textTheme: const TextTheme(
           headlineLarge: AppStyles.headlineLarge,
           headlineMedium: AppStyles.headlineMedium,
@@ -123,26 +112,18 @@ class ArtisanMarketplaceApp extends StatelessWidget {
           labelMedium: AppStyles.labelMedium,
           labelSmall: AppStyles.labelSmall,
         ),
-
-        // Floating action button theme
         floatingActionButtonTheme: const FloatingActionButtonThemeData(
           backgroundColor: AppColors.primary,
           foregroundColor: AppColors.textOnPrimary,
           elevation: 4,
         ),
-
-        // Divider theme
         dividerTheme: const DividerThemeData(
           color: AppColors.divider,
           thickness: 1,
         ),
-
-        // Progress indicator theme
         progressIndicatorTheme: const ProgressIndicatorThemeData(
           color: AppColors.primary,
         ),
-
-        // Snack bar theme
         snackBarTheme: SnackBarThemeData(
           backgroundColor: AppColors.textPrimary,
           contentTextStyle: const TextStyle(color: AppColors.textOnPrimary),

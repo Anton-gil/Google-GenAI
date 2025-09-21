@@ -115,7 +115,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
                 const SnackBar(content: Text('Logout successful')),
               );
             },
-            child: Text(
+            child: const Text(
               'Logout',
               style: TextStyle(color: AppColors.error),
             ),
@@ -277,11 +277,11 @@ class _ProfileScreenState extends State<ProfileScreen> {
                     color: AppColors.textOnPrimary,
                     width: 4,
                   ),
-                  boxShadow: [
+                  boxShadow: const [
                     BoxShadow(
                       color: AppColors.cardShadow,
                       blurRadius: 8,
-                      offset: const Offset(0, 4),
+                      offset: Offset(0, 4),
                     ),
                   ],
                 ),
@@ -298,7 +298,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
                             currentUser.name.isNotEmpty
                                 ? currentUser.name[0].toUpperCase()
                                 : 'A',
-                            style: TextStyle(
+                            style: const TextStyle(
                               color: AppColors.primary,
                               fontSize: 28,
                               fontWeight: FontWeight.bold,
@@ -565,11 +565,11 @@ class _ProfileScreenState extends State<ProfileScreen> {
       decoration: BoxDecoration(
         color: AppColors.surface,
         borderRadius: BorderRadius.circular(AppStyles.radiusLarge),
-        boxShadow: [
+        boxShadow: const [
           BoxShadow(
             color: AppColors.cardShadow,
             blurRadius: 4,
-            offset: const Offset(0, 2),
+            offset: Offset(0, 2),
           ),
         ],
       ),
@@ -607,7 +607,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
                     ),
                   ),
                 ),
-                Icon(
+                const Icon(
                   Icons.chevron_right,
                   color: AppColors.textSecondary,
                   size: 20,

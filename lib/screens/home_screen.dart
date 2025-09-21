@@ -25,7 +25,7 @@ class _HomeScreenState extends State<HomeScreen> {
   ProductCategory? _selectedCategory;
   bool _isLoading = true;
   String _searchQuery = '';
-  Set<String> _favoriteProductIds = {};
+  final Set<String> _favoriteProductIds = {};
 
   List<Product> get _likedProducts =>
       _products.where((p) => _favoriteProductIds.contains(p.id)).toList();
@@ -258,12 +258,12 @@ class _HomeScreenState extends State<HomeScreen> {
                   ),
                   if (_likedProducts.isNotEmpty) ...[
                     const SizedBox(height: 24),
-                    Padding(
-                      padding: const EdgeInsets.symmetric(horizontal: 16.0),
+                    const Padding(
+                      padding: EdgeInsets.symmetric(horizontal: 16.0),
                       child: Row(
                         children: [
-                          const Icon(Icons.favorite, color: Colors.red),
-                          const SizedBox(width: 8),
+                          Icon(Icons.favorite, color: Colors.red),
+                          SizedBox(width: 8),
                           Text('Liked Products', style: AppStyles.titleLarge),
                         ],
                       ),
@@ -309,13 +309,13 @@ class _HomeScreenState extends State<HomeScreen> {
   Widget _buildSearchAndFilter() {
     return Container(
       padding: const EdgeInsets.all(AppStyles.spacing16),
-      decoration: BoxDecoration(
+      decoration: const BoxDecoration(
         color: AppColors.surface,
         boxShadow: [
           BoxShadow(
             color: AppColors.cardShadow,
             blurRadius: 4,
-            offset: const Offset(0, 2),
+            offset: Offset(0, 2),
           ),
         ],
       ),
@@ -332,13 +332,13 @@ class _HomeScreenState extends State<HomeScreen> {
                 controller: _searchController,
                 decoration: InputDecoration(
                   hintText: 'Search products, artisans...',
-                  hintStyle: TextStyle(color: AppColors.textHint),
+                  hintStyle: const TextStyle(color: AppColors.textHint),
                   prefixIcon:
-                      Icon(Icons.search, color: AppColors.textSecondary),
+                      const Icon(Icons.search, color: AppColors.textSecondary),
                   suffixIcon: _searchQuery.isNotEmpty
                       ? IconButton(
                           icon:
-                              Icon(Icons.clear, color: AppColors.textSecondary),
+                              const Icon(Icons.clear, color: AppColors.textSecondary),
                           onPressed: () {
                             _searchController.clear();
                             _onSearchChanged('');

@@ -26,7 +26,7 @@ class _ProductCardState extends State<ProductCard>
     with SingleTickerProviderStateMixin {
   late AnimationController _animationController;
   late Animation<double> _scaleAnimation;
-  bool _isHovered = false;
+  final bool _isHovered = false;
 
   @override
   void initState() {
@@ -135,11 +135,11 @@ class _ProductCardState extends State<ProductCard>
                                 decoration: BoxDecoration(
                                   color: AppColors.surface.withOpacity(0.9),
                                   shape: BoxShape.circle,
-                                  boxShadow: [
+                                  boxShadow: const [
                                     BoxShadow(
                                       color: AppColors.cardShadow,
                                       blurRadius: 4,
-                                      offset: const Offset(0, 2),
+                                      offset: Offset(0, 2),
                                     ),
                                   ],
                                 ),

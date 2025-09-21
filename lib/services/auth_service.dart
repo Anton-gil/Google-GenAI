@@ -321,8 +321,9 @@ class AuthService {
 
     if (_currentUser!.phone.isNotEmpty) progress += 0.2; // Phone verified
     if (_currentUser!.aadhaarNumber != null) progress += 0.2; // Aadhaar added
-    if (_currentUser!.verificationStatus != VerificationStatus.pending)
+    if (_currentUser!.verificationStatus != VerificationStatus.pending) {
       progress += 0.3; // Video submitted
+    }
 
     return progress;
   }

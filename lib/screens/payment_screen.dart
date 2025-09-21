@@ -125,11 +125,11 @@ class _PaymentScreenState extends State<PaymentScreen> {
       decoration: BoxDecoration(
         color: AppColors.surface,
         borderRadius: BorderRadius.circular(AppStyles.radiusLarge),
-        boxShadow: [
+        boxShadow: const [
           BoxShadow(
             color: AppColors.cardShadow,
             blurRadius: 8,
-            offset: const Offset(0, 4),
+            offset: Offset(0, 4),
           ),
         ],
       ),
@@ -183,11 +183,11 @@ class _PaymentScreenState extends State<PaymentScreen> {
                   ? Image.network(
                       item.product.imageUrls.first,
                       fit: BoxFit.cover,
-                      errorBuilder: (context, error, stackTrace) => Icon(
+                      errorBuilder: (context, error, stackTrace) => const Icon(
                           Icons.image_not_supported,
                           color: AppColors.textSecondary),
                     )
-                  : Icon(Icons.image_not_supported,
+                  : const Icon(Icons.image_not_supported,
                       color: AppColors.textSecondary),
             ),
           ),
@@ -230,11 +230,11 @@ class _PaymentScreenState extends State<PaymentScreen> {
       decoration: BoxDecoration(
         color: AppColors.surface,
         borderRadius: BorderRadius.circular(AppStyles.radiusLarge),
-        boxShadow: [
+        boxShadow: const [
           BoxShadow(
             color: AppColors.cardShadow,
             blurRadius: 8,
-            offset: const Offset(0, 4),
+            offset: Offset(0, 4),
           ),
         ],
       ),
@@ -318,11 +318,11 @@ class _PaymentScreenState extends State<PaymentScreen> {
           color: isSelected ? method.color : AppColors.border,
           width: isSelected ? 2 : 1,
         ),
-        boxShadow: [
+        boxShadow: const [
           BoxShadow(
             color: AppColors.cardShadow,
             blurRadius: 4,
-            offset: const Offset(0, 2),
+            offset: Offset(0, 2),
           ),
         ],
       ),
@@ -381,7 +381,7 @@ class _PaymentScreenState extends State<PaymentScreen> {
                     size: 24,
                   )
                 else
-                  Icon(
+                  const Icon(
                     Icons.radio_button_unchecked,
                     color: AppColors.textHint,
                     size: 24,
@@ -488,13 +488,13 @@ class _PaymentScreenState extends State<PaymentScreen> {
           mainAxisSize: MainAxisSize.min,
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            Text('Your order has been placed successfully.'),
+            const Text('Your order has been placed successfully.'),
             const SizedBox(height: 8),
             Text('Payment Method: ${_selectedPaymentMethod!.name}'),
             const SizedBox(height: 8),
             Text('Amount: ₹${widget.totalAmount.toStringAsFixed(0)}'),
             const SizedBox(height: 8),
-            Text('Order will be delivered within 3-5 business days.'),
+            const Text('Order will be delivered within 3-5 business days.'),
           ],
         ),
         actions: [

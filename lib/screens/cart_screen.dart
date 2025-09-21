@@ -95,7 +95,7 @@ class _CartScreenState extends State<CartScreen> {
       child: Column(
         mainAxisAlignment: MainAxisAlignment.center,
         children: [
-          Icon(
+          const Icon(
             Icons.shopping_cart_outlined,
             size: 80,
             color: AppColors.textSecondary,
@@ -108,7 +108,7 @@ class _CartScreenState extends State<CartScreen> {
             ),
           ),
           const SizedBox(height: 8),
-          Text(
+          const Text(
             'Start shopping to add items to your cart',
             style: AppStyles.bodyText,
             textAlign: TextAlign.center,
@@ -150,11 +150,11 @@ class _CartScreenState extends State<CartScreen> {
       decoration: BoxDecoration(
         color: AppColors.surface,
         borderRadius: BorderRadius.circular(AppStyles.radiusLarge),
-        boxShadow: [
+        boxShadow: const [
           BoxShadow(
             color: AppColors.cardShadow,
             blurRadius: 8,
-            offset: const Offset(0, 4),
+            offset: Offset(0, 4),
           ),
         ],
       ),
@@ -185,11 +185,11 @@ class _CartScreenState extends State<CartScreen> {
                             ),
                           );
                         },
-                        errorBuilder: (context, error, stackTrace) => Icon(
+                        errorBuilder: (context, error, stackTrace) => const Icon(
                             Icons.image_not_supported,
                             color: AppColors.textSecondary),
                       )
-                    : Icon(Icons.image_not_supported,
+                    : const Icon(Icons.image_not_supported,
                         color: AppColors.textSecondary),
               ),
             ),
@@ -300,7 +300,7 @@ class _CartScreenState extends State<CartScreen> {
                       borderRadius:
                           BorderRadius.circular(AppStyles.radiusMedium),
                     ),
-                    child: Icon(
+                    child: const Icon(
                       Icons.delete_outline,
                       color: AppColors.error,
                       size: 18,
@@ -318,16 +318,16 @@ class _CartScreenState extends State<CartScreen> {
   Widget _buildCheckoutBar() {
     return Container(
       padding: const EdgeInsets.all(AppStyles.spacing20),
-      decoration: BoxDecoration(
+      decoration: const BoxDecoration(
         color: AppColors.surface,
-        borderRadius: const BorderRadius.vertical(
+        borderRadius: BorderRadius.vertical(
           top: Radius.circular(AppStyles.radiusXLarge),
         ),
         boxShadow: [
           BoxShadow(
             color: AppColors.cardShadow,
             blurRadius: 12,
-            offset: const Offset(0, -4),
+            offset: Offset(0, -4),
           ),
         ],
       ),

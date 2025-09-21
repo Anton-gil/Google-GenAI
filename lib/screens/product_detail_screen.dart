@@ -1,7 +1,6 @@
 // lib/screens/product_detail_screen.dart
 import 'package:flutter/material.dart';
 import '../models/product.dart';
-import '../widgets/custom_button.dart';
 import '../screens/cart_screen.dart';
 import '../services/cart_service.dart';
 import '../utils/app_colors.dart';
@@ -20,7 +19,7 @@ class ProductDetailScreen extends StatefulWidget {
 }
 
 class _ProductDetailScreenState extends State<ProductDetailScreen> {
-  int _selectedImageIndex = 0;
+  final int _selectedImageIndex = 0;
   int _quantity = 1;
   bool _isFavorite = false;
 
@@ -288,11 +287,11 @@ class _ProductDetailScreenState extends State<ProductDetailScreen> {
       decoration: BoxDecoration(
         color: AppColors.surface,
         borderRadius: BorderRadius.circular(AppStyles.radiusLarge),
-        boxShadow: [
+        boxShadow: const [
           BoxShadow(
             color: AppColors.cardShadow,
             blurRadius: 8,
-            offset: const Offset(0, 4),
+            offset: Offset(0, 4),
           ),
         ],
       ),
@@ -452,16 +451,16 @@ class _ProductDetailScreenState extends State<ProductDetailScreen> {
   Widget _buildBottomBar() {
     return Container(
       padding: const EdgeInsets.all(AppStyles.spacing20),
-      decoration: BoxDecoration(
+      decoration: const BoxDecoration(
         color: AppColors.surface,
-        borderRadius: const BorderRadius.vertical(
+        borderRadius: BorderRadius.vertical(
           top: Radius.circular(AppStyles.radiusXLarge),
         ),
         boxShadow: [
           BoxShadow(
             color: AppColors.cardShadow,
             blurRadius: 12,
-            offset: const Offset(0, -4),
+            offset: Offset(0, -4),
           ),
         ],
       ),
@@ -529,13 +528,13 @@ class _ProductDetailScreenState extends State<ProductDetailScreen> {
                     ScaffoldMessenger.of(context).showSnackBar(
                       SnackBar(
                         content: Text(
-                            'Added ${_quantity} ${widget.product.name} to cart'),
+                            'Added $_quantity ${widget.product.name} to cart'),
                         action: SnackBarAction(
                           label: 'View Cart',
                           onPressed: () {
                             Navigator.of(context).push(
                               MaterialPageRoute(
-                                builder: (context) => CartScreen(),
+                                builder: (context) => const CartScreen(),
                               ),
                             );
                           },

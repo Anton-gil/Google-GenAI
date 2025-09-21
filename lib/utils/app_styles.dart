@@ -109,11 +109,11 @@ class AppStyles {
   static final BoxDecoration cardDecoration = BoxDecoration(
     color: AppColors.surface,
     borderRadius: BorderRadius.circular(radiusLarge),
-    boxShadow: [
+    boxShadow: const [
       BoxShadow(
         color: AppColors.cardShadow,
         blurRadius: 8,
-        offset: const Offset(0, 2),
+        offset: Offset(0, 2),
       ),
     ],
   );

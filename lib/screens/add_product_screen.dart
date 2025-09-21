@@ -5,9 +5,7 @@ import 'dart:io';
 import '../widgets/custom_button.dart';
 import '../widgets/custom_textfield.dart';
 import '../utils/app_colors.dart';
-import '../utils/app_styles.dart';
 import '../services/ai_service.dart';
-import '../models/product.dart';
 
 class AddProductScreen extends StatefulWidget {
   const AddProductScreen({super.key});

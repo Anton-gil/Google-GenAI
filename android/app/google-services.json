@@ -1,0 +1,29 @@
+{
+  "project_info": {
+    "project_number": "220237992971",
+    "project_id": "seraphex-48872",
+    "storage_bucket": "seraphex-48872.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:220237992971:android:644b39cfd4ad619e43a30e",
+        "android_client_info": {
+          "package_name": "com.example.artisan_marketplace"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyBzRTTPYd6X8W1fIRqDAbnd4LDJv1PxelU"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}

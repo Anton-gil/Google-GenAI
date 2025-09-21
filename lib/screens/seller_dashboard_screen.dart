@@ -1,13 +1,9 @@
 // lib/screens/seller_dashboard_screen.dart
 import 'package:flutter/material.dart';
 import '../models/product.dart';
-import '../models/user.dart';
 import '../services/auth_service.dart';
 import '../services/ai_service.dart';
 import '../utils/app_colors.dart';
-import '../utils/app_styles.dart';
-import '../widgets/custom_button.dart';
-import '../widgets/product_card.dart';
 import 'add_product_screen.dart';
 
 class SellerDashboardScreen extends StatefulWidget {
@@ -508,11 +504,11 @@ class _SellerDashboardScreenState extends State<SellerDashboardScreen> with Sing
           ),
           child: Column(
             children: [
-              Row(
+              const Row(
                 children: [
-                  const Icon(Icons.lightbulb, color: AppColors.accent),
-                  const SizedBox(width: 8),
-                  const Expanded(
+                  Icon(Icons.lightbulb, color: AppColors.accent),
+                  SizedBox(width: 8),
+                  Expanded(
                     child: Text(
                       'Consider adding more pottery items - they\'re trending in your area!',
                       style: TextStyle(fontWeight: FontWeight.w600),

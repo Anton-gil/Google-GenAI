@@ -1,6 +1,5 @@
 // lib/screens/register_screen.dart
 import 'package:flutter/material.dart';
-import 'package:flutter/services.dart';
 import '../models/user.dart';
 import '../services/auth_service.dart';
 import '../utils/app_colors.dart';
@@ -276,7 +275,7 @@ class _RegisterScreenState extends State<RegisterScreen> {
             style: AppStyles.titleLarge.copyWith(color: AppColors.primary),
           ),
           const SizedBox(height: 8),
-          Text(
+          const Text(
             'Let\'s start with your basic details',
             style: AppStyles.bodyMedium,
           ),
@@ -412,7 +411,7 @@ class _RegisterScreenState extends State<RegisterScreen> {
             style: AppStyles.titleLarge.copyWith(color: AppColors.primary),
           ),
           const SizedBox(height: 8),
-          Text(
+          const Text(
             'Create a secure password for your account',
             style: AppStyles.bodyMedium,
           ),
@@ -602,11 +601,11 @@ class _RegisterScreenState extends State<RegisterScreen> {
             decoration: BoxDecoration(
               color: AppColors.surface,
               borderRadius: BorderRadius.circular(12),
-              boxShadow: [
+              boxShadow: const [
                 BoxShadow(
                   color: AppColors.cardShadow,
                   blurRadius: 8,
-                  offset: const Offset(0, 2),
+                  offset: Offset(0, 2),
                 ),
               ],
             ),

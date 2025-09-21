@@ -67,7 +67,7 @@ class CustomButton extends StatelessWidget {
     return ElevatedButton(
       onPressed: isLoading ? null : onPressed,
       style: AppStyles.primaryButtonStyle.copyWith(
-        padding: padding != null ? MaterialStateProperty.all(padding) : null,
+        padding: padding != null ? WidgetStateProperty.all(padding) : null,
       ),
       child: _buildButtonContent(),
     );
@@ -77,7 +77,7 @@ class CustomButton extends StatelessWidget {
     return ElevatedButton(
       onPressed: isLoading ? null : onPressed,
       style: AppStyles.secondaryButtonStyle.copyWith(
-        padding: padding != null ? MaterialStateProperty.all(padding) : null,
+        padding: padding != null ? WidgetStateProperty.all(padding) : null,
       ),
       child: _buildButtonContent(),
     );
@@ -87,7 +87,7 @@ class CustomButton extends StatelessWidget {
     return OutlinedButton(
       onPressed: isLoading ? null : onPressed,
       style: AppStyles.outlinedButtonStyle.copyWith(
-        padding: padding != null ? MaterialStateProperty.all(padding) : null,
+        padding: padding != null ? WidgetStateProperty.all(padding) : null,
       ),
       child: _buildButtonContent(textColor: AppColors.primary),
     );
@@ -97,7 +97,7 @@ class CustomButton extends StatelessWidget {
     return TextButton(
       onPressed: isLoading ? null : onPressed,
       style: AppStyles.textButtonStyle.copyWith(
-        padding: padding != null ? MaterialStateProperty.all(padding) : null,
+        padding: padding != null ? WidgetStateProperty.all(padding) : null,
       ),
       child: _buildButtonContent(textColor: AppColors.primary),
     );
