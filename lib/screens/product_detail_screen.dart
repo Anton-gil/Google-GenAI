@@ -2,6 +2,8 @@
 import 'package:flutter/material.dart';
 import '../models/product.dart';
 import '../widgets/custom_button.dart';
+import '../screens/cart_screen.dart';
+import '../services/cart_service.dart';
 import '../utils/app_colors.dart';
 import '../utils/app_styles.dart';
 
@@ -61,6 +63,8 @@ class _ProductDetailScreenState extends State<ProductDetailScreen> {
       pinned: true,
       backgroundColor: AppColors.primary,
       foregroundColor: AppColors.textOnPrimary,
+      elevation: 4,
+      iconTheme: const IconThemeData(color: AppColors.textOnPrimary),
       flexibleSpace: FlexibleSpaceBar(
         background: Stack(
           fit: StackFit.expand,
@@ -520,6 +524,8 @@ class _ProductDetailScreenState extends State<ProductDetailScreen> {
                 color: Colors.transparent,
                 child: InkWell(
                   onTap: () {
+                    CartService()
+                        .addToCart(widget.product, quantity: _quantity);
                     ScaffoldMessenger.of(context).showSnackBar(
                       SnackBar(
                         content: Text(
@@ -527,7 +533,11 @@ class _ProductDetailScreenState extends State<ProductDetailScreen> {
                         action: SnackBarAction(
                           label: 'View Cart',
                           onPressed: () {
-                            // Navigate to cart
+                            Navigator.of(context).push(
+                              MaterialPageRoute(
+                                builder: (context) => CartScreen(),
+                              ),
+                            );
                           },
                         ),
                       ),

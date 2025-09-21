@@ -2,6 +2,7 @@
 import 'package:flutter/material.dart';
 import '../models/product.dart';
 import '../widgets/custom_button.dart';
+import '../services/cart_service.dart';
 import '../utils/app_colors.dart';
 import '../utils/app_styles.dart';
 import 'payment_screen.dart';
@@ -26,8 +27,7 @@ class CartScreen extends StatefulWidget {
 }
 
 class _CartScreenState extends State<CartScreen> {
-  List<CartItem> cartItems =
-      []; // In real app, this would come from state management
+  List<CartItem> get cartItems => CartService().cartItems;
 
   @override
   void initState() {
@@ -53,7 +53,7 @@ class _CartScreenState extends State<CartScreen> {
 
   void _removeItem(int index) {
     setState(() {
-      cartItems.removeAt(index);
+      CartService().removeFromCart(cartItems[index].product);
     });
   }
 
@@ -82,6 +82,8 @@ class _CartScreenState extends State<CartScreen> {
         title: const Text('Your Cart'),
         backgroundColor: AppColors.primary,
         foregroundColor: AppColors.textOnPrimary,
+        elevation: 4,
+        iconTheme: const IconThemeData(color: AppColors.textOnPrimary),
       ),
       body: cartItems.isEmpty ? _buildEmptyCart() : _buildCartContent(),
       bottomNavigationBar: cartItems.isEmpty ? null : _buildCheckoutBar(),

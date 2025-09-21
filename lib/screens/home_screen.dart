@@ -1,4 +1,3 @@
-// lib/screens/home_screen.dart
 import 'package:flutter/material.dart';
 import '../models/product.dart';
 import '../models/user.dart';
@@ -27,6 +26,9 @@ class _HomeScreenState extends State<HomeScreen> {
   bool _isLoading = true;
   String _searchQuery = '';
   Set<String> _favoriteProductIds = {};
+
+  List<Product> get _likedProducts =>
+      _products.where((p) => _favoriteProductIds.contains(p.id)).toList();
 
   // Filter variables
   double _minPrice = 0;
@@ -204,22 +206,25 @@ class _HomeScreenState extends State<HomeScreen> {
       appBar: AppBar(
         title: const Row(
           children: [
-            Icon(Icons.palette, color: AppColors.primary),
+            Icon(Icons.palette, color: AppColors.textOnPrimary),
             SizedBox(width: 8),
             Text(
               'Artisan Marketplace',
               style: TextStyle(
-                color: AppColors.primary,
+                color: AppColors.textOnPrimary,
                 fontWeight: FontWeight.bold,
               ),
             ),
           ],
         ),
-        backgroundColor: Colors.transparent,
-        elevation: 0,
+        backgroundColor: AppColors.primary,
+        foregroundColor: AppColors.textOnPrimary,
+        elevation: 4,
+        iconTheme: const IconThemeData(color: AppColors.textOnPrimary),
         actions: [
           IconButton(
-            icon: const Icon(Icons.chat_bubble_outline),
+            icon: const Icon(Icons.chat_bubble_outline,
+                color: AppColors.textOnPrimary),
             onPressed: () {
               Navigator.of(context).push(
                 MaterialPageRoute(builder: (context) => const ChatScreen()),
@@ -228,7 +233,7 @@ class _HomeScreenState extends State<HomeScreen> {
           ),
           if (user?.role == UserRole.seller || user?.role == UserRole.both)
             IconButton(
-              icon: const Icon(Icons.dashboard),
+              icon: const Icon(Icons.dashboard, color: AppColors.textOnPrimary),
               onPressed: () {
                 Navigator.of(context).push(
                   MaterialPageRoute(
@@ -251,6 +256,39 @@ class _HomeScreenState extends State<HomeScreen> {
                         ? _buildEmptyState()
                         : _buildProductsGrid(),
                   ),
+                  if (_likedProducts.isNotEmpty) ...[
+                    const SizedBox(height: 24),
+                    Padding(
+                      padding: const EdgeInsets.symmetric(horizontal: 16.0),
+                      child: Row(
+                        children: [
+                          const Icon(Icons.favorite, color: Colors.red),
+                          const SizedBox(width: 8),
+                          Text('Liked Products', style: AppStyles.titleLarge),
+                        ],
+                      ),
+                    ),
+                    SizedBox(
+                      height: 180,
+                      child: ListView.builder(
+                        scrollDirection: Axis.horizontal,
+                        itemCount: _likedProducts.length,
+                        itemBuilder: (context, index) {
+                          final product = _likedProducts[index];
+                          return Container(
+                            width: 140,
+                            margin: const EdgeInsets.all(8),
+                            child: ProductCard(
+                              product: product,
+                              onTap: () => _navigateToProductDetail(product),
+                              onFavoriteToggle: () => _toggleFavorite(product),
+                              isFavorite: true,
+                            ),
+                          );
+                        },
+                      ),
+                    ),
+                  ],
                 ],
               ),
             ),
