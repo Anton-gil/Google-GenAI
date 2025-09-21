@@ -73,8 +73,8 @@ class _RegisterScreenState extends State<RegisterScreen> {
             backgroundColor: AppColors.success,
           ),
         );
-
-        Navigator.of(context).pushReplacementNamed('/home');
+        // The AuthWrapper will automatically handle navigation
+        // Remove manual navigation as it should be handled by AuthWrapper
       } else if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
@@ -104,13 +104,13 @@ class _RegisterScreenState extends State<RegisterScreen> {
       final result = await _authService.signInWithGoogle();
 
       if (result.success && mounted) {
-        Navigator.of(context).pushReplacementNamed('/home');
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
             content: Text(result.message ?? 'Google sign in successful'),
             backgroundColor: AppColors.success,
           ),
         );
+        // AuthWrapper will handle navigation
       } else if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
@@ -122,8 +122,8 @@ class _RegisterScreenState extends State<RegisterScreen> {
     } catch (e) {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(
-            content: Text('Google sign in error. Please try again.'),
+          SnackBar(
+            content: Text('Google sign in error: ${e.toString()}'),
             backgroundColor: AppColors.error,
           ),
         );
@@ -140,13 +140,13 @@ class _RegisterScreenState extends State<RegisterScreen> {
       final result = await _authService.signInWithFacebook();
 
       if (result.success && mounted) {
-        Navigator.of(context).pushReplacementNamed('/home');
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
             content: Text(result.message ?? 'Facebook sign in successful'),
             backgroundColor: AppColors.success,
           ),
         );
+        // AuthWrapper will handle navigation
       } else if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
@@ -177,6 +177,9 @@ class _RegisterScreenState extends State<RegisterScreen> {
         );
         return;
       }
+    }
+    if (_currentStep == 1) {
+      if (!_formKey.currentState!.validate()) return;
     }
     setState(() => _currentStep++);
   }
@@ -556,44 +559,63 @@ class _RegisterScreenState extends State<RegisterScreen> {
                 ],
               ),
             ),
+            const SizedBox(height: 24),
           ],
 
-          const SizedBox(height: 32),
-
-          // Terms and Conditions
-          CheckboxListTile(
-            value: _agreeToTerms,
-            onChanged: (bool? value) {
-              setState(() => _agreeToTerms = value ?? false);
-            },
-            title: RichText(
-              text: TextSpan(
-                style: AppStyles.bodyMedium,
-                children: [
-                  const TextSpan(text: 'I agree to the '),
-                  TextSpan(
-                    text: 'Terms & Conditions',
-                    style: AppStyles.bodyMedium.copyWith(
-                      color: AppColors.primary,
-                      decoration: TextDecoration.underline,
+          // Fixed Terms and Conditions Checkbox - using Row instead of CheckboxListTile
+          Container(
+            padding: const EdgeInsets.symmetric(vertical: 8),
+            child: Row(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Checkbox(
+                  value: _agreeToTerms,
+                  onChanged: (bool? value) {
+                    setState(() => _agreeToTerms = value ?? false);
+                  },
+                  activeColor: AppColors.primary,
+                  materialTapTargetSize: MaterialTapTargetSize.shrinkWrap,
+                ),
+                const SizedBox(width: 8),
+                Expanded(
+                  child: GestureDetector(
+                    onTap: () {
+                      setState(() => _agreeToTerms = !_agreeToTerms);
+                    },
+                    child: RichText(
+                      text: TextSpan(
+                        style: AppStyles.bodyMedium.copyWith(
+                          color: AppColors.textPrimary,
+                        ),
+                        children: [
+                          const TextSpan(text: 'I agree to the '),
+                          TextSpan(
+                            text: 'Terms & Conditions',
+                            style: AppStyles.bodyMedium.copyWith(
+                              color: AppColors.primary,
+                              decoration: TextDecoration.underline,
+                              fontWeight: FontWeight.w600,
+                            ),
+                          ),
+                          const TextSpan(text: ' and '),
+                          TextSpan(
+                            text: 'Privacy Policy',
+                            style: AppStyles.bodyMedium.copyWith(
+                              color: AppColors.primary,
+                              decoration: TextDecoration.underline,
+                              fontWeight: FontWeight.w600,
+                            ),
+                          ),
+                        ],
+                      ),
                     ),
                   ),
-                  const TextSpan(text: ' and '),
-                  TextSpan(
-                    text: 'Privacy Policy',
-                    style: AppStyles.bodyMedium.copyWith(
-                      color: AppColors.primary,
-                      decoration: TextDecoration.underline,
-                    ),
-                  ),
-                ],
-              ),
+                ),
+              ],
             ),
-            activeColor: AppColors.primary,
-            controlAffinity: ListTileControlAffinity.leading,
           ),
 
-          const SizedBox(height: 16),
+          const SizedBox(height: 24),
 
           // Account Summary
           Container(
@@ -688,7 +710,7 @@ class _RegisterScreenState extends State<RegisterScreen> {
       child: Material(
         color: Colors.transparent,
         child: InkWell(
-          onTap: onPressed,
+          onTap: _isLoading ? null : onPressed, // Disable when loading
           borderRadius: BorderRadius.circular(AppStyles.radiusLarge),
           child: Container(
             padding: const EdgeInsets.symmetric(
@@ -698,11 +720,21 @@ class _RegisterScreenState extends State<RegisterScreen> {
             child: Row(
               mainAxisAlignment: MainAxisAlignment.center,
               children: [
-                Icon(
-                  icon,
-                  color: color,
-                  size: 20,
-                ),
+                if (_isLoading && (label == 'Google' || label == 'Facebook'))
+                  const SizedBox(
+                    width: 16,
+                    height: 16,
+                    child: CircularProgressIndicator(
+                      strokeWidth: 2,
+                      valueColor: AlwaysStoppedAnimation<Color>(AppColors.primary),
+                    ),
+                  )
+                else
+                  Icon(
+                    icon,
+                    color: color,
+                    size: 20,
+                  ),
                 const SizedBox(width: AppStyles.spacing8),
                 Text(
                   label,

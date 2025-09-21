@@ -30,6 +30,9 @@ class _LoginScreenState extends State<LoginScreen> {
     super.dispose();
   }
 
+  @override
+  Widget build(BuildContext context) {
+
   Future<void> _login() async {
     if (!_formKey.currentState!.validate()) return;
 
@@ -101,8 +104,8 @@ class _LoginScreenState extends State<LoginScreen> {
     } catch (e) {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(
-            content: Text('Google sign in error. Please try again.'),
+          SnackBar(
+            content: Text('Google sign in error: ${e.toString()}'),
             backgroundColor: AppColors.error,
           ),
         );
@@ -148,8 +151,41 @@ class _LoginScreenState extends State<LoginScreen> {
     }
   }
 
-  @override
-  Widget build(BuildContext context) {
+  Future<void> _browseAsGuest() async {
+    setState(() => _isLoading = true);
+
+    try {
+      final result = await _authService.loginAsGuest();
+
+      if (result.success && mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text(result.message ?? 'Browsing as guest'),
+            backgroundColor: AppColors.success,
+          ),
+        );
+        // The AuthWrapper will automatically detect the login state change
+      } else if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text(result.message ?? 'Failed to browse as guest'),
+            backgroundColor: AppColors.error,
+          ),
+        );
+      }
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text('An error occurred. Please try again.'),
+            backgroundColor: AppColors.error,
+          ),
+        );
+      }
+    } finally {
+      if (mounted) setState(() => _isLoading = false);
+    }
+  }
     return Scaffold(
       backgroundColor: AppColors.background,
       body: SafeArea(
@@ -262,38 +298,57 @@ class _LoginScreenState extends State<LoginScreen> {
 
                 const SizedBox(height: 16),
 
-                // Terms and Conditions Checkbox
-                CheckboxListTile(
-                  value: _agreeToTerms,
-                  onChanged: (bool? value) {
-                    setState(() => _agreeToTerms = value ?? false);
-                  },
-                  title: RichText(
-                    text: TextSpan(
-                      style: AppStyles.bodyMedium,
-                      children: [
-                        const TextSpan(text: 'I agree to the '),
-                        TextSpan(
-                          text: 'Terms & Conditions',
-                          style: AppStyles.bodyMedium.copyWith(
-                            color: AppColors.primary,
-                            decoration: TextDecoration.underline,
+                // Fixed Terms and Conditions Checkbox - using Row instead of CheckboxListTile
+                Container(
+                  padding: const EdgeInsets.symmetric(vertical: 8),
+                  child: Row(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Checkbox(
+                        value: _agreeToTerms,
+                        onChanged: (bool? value) {
+                          setState(() => _agreeToTerms = value ?? false);
+                        },
+                        activeColor: AppColors.primary,
+                        materialTapTargetSize: MaterialTapTargetSize.shrinkWrap,
+                      ),
+                      const SizedBox(width: 8),
+                      Expanded(
+                        child: GestureDetector(
+                          onTap: () {
+                            setState(() => _agreeToTerms = !_agreeToTerms);
+                          },
+                          child: RichText(
+                            text: TextSpan(
+                              style: AppStyles.bodyMedium.copyWith(
+                                color: AppColors.textPrimary,
+                              ),
+                              children: [
+                                const TextSpan(text: 'I agree to the '),
+                                TextSpan(
+                                  text: 'Terms & Conditions',
+                                  style: AppStyles.bodyMedium.copyWith(
+                                    color: AppColors.primary,
+                                    decoration: TextDecoration.underline,
+                                    fontWeight: FontWeight.w600,
+                                  ),
+                                ),
+                                const TextSpan(text: ' and '),
+                                TextSpan(
+                                  text: 'Privacy Policy',
+                                  style: AppStyles.bodyMedium.copyWith(
+                                    color: AppColors.primary,
+                                    decoration: TextDecoration.underline,
+                                    fontWeight: FontWeight.w600,
+                                  ),
+                                ),
+                              ],
+                            ),
                           ),
                         ),
-                        const TextSpan(text: ' and '),
-                        TextSpan(
-                          text: 'Privacy Policy',
-                          style: AppStyles.bodyMedium.copyWith(
-                            color: AppColors.primary,
-                            decoration: TextDecoration.underline,
-                          ),
-                        ),
-                      ],
-                    ),
+                      ),
+                    ],
                   ),
-                  activeColor: AppColors.primary,
-                  controlAffinity: ListTileControlAffinity.leading,
-                  contentPadding: EdgeInsets.zero,
                 ),
 
                 const SizedBox(height: 24),
@@ -355,10 +410,7 @@ class _LoginScreenState extends State<LoginScreen> {
                 OutlinedCustomButton(
                   text: 'Browse as Guest',
                   icon: Icons.visibility_outlined,
-                  onPressed: () {
-                    // For guest browsing, we'll create a temporary user
-                    _authService.login('guest@example.com', 'guest123');
-                  },
+                  onPressed: _browseAsGuest,
                 ),
 
                 const SizedBox(height: 32),
@@ -438,7 +490,7 @@ class _LoginScreenState extends State<LoginScreen> {
       child: Material(
         color: Colors.transparent,
         child: InkWell(
-          onTap: onPressed,
+          onTap: _isLoading ? null : onPressed, // Disable when loading
           borderRadius: BorderRadius.circular(AppStyles.radiusLarge),
           child: Container(
             padding: const EdgeInsets.symmetric(
@@ -448,11 +500,21 @@ class _LoginScreenState extends State<LoginScreen> {
             child: Row(
               mainAxisAlignment: MainAxisAlignment.center,
               children: [
-                Icon(
-                  icon,
-                  color: color,
-                  size: 20,
-                ),
+                if (_isLoading && label == 'Google')
+                  const SizedBox(
+                    width: 16,
+                    height: 16,
+                    child: CircularProgressIndicator(
+                      strokeWidth: 2,
+                      valueColor: AlwaysStoppedAnimation<Color>(AppColors.primary),
+                    ),
+                  )
+                else
+                  Icon(
+                    icon,
+                    color: color,
+                    size: 20,
+                  ),
                 const SizedBox(width: AppStyles.spacing8),
                 Text(
                   label,

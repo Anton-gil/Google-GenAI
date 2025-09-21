@@ -1,10 +1,13 @@
 // lib/services/auth_service.dart
-import '../models/user.dart';
+import 'dart:async';
+import 'package:firebase_auth/firebase_auth.dart';
+import 'package:google_sign_in/google_sign_in.dart';
+import '../models/user.dart' as app_user;
 
 class AuthResult {
   final bool success;
   final String? message;
-  final User? user;
+  final app_user.User? user;
 
   const AuthResult({
     required this.success,
@@ -18,121 +21,202 @@ class AuthService {
   factory AuthService() => _instance;
   AuthService._internal();
 
-  User? _currentUser;
-  bool _isLoggedIn = false;
+  final FirebaseAuth _firebaseAuth = FirebaseAuth.instance;
+  final GoogleSignIn _googleSignIn = GoogleSignIn();
 
-  User? get currentUser => _currentUser;
-  bool get isLoggedIn => _isLoggedIn;
+  app_user.User? _currentUser;
+  final StreamController<bool> _authStateController = StreamController<bool>.broadcast();
 
-  // Mock login for MVP - in real app, integrate with Firebase/Supabase
+  // Expose auth state as stream
+  Stream<bool> get authStateChanges => _authStateController.stream;
+  
+  app_user.User? get currentUser => _currentUser;
+  bool get isLoggedIn => _firebaseAuth.currentUser != null;
+
+  // Initialize auth service and listen to Firebase auth changes
+  void initialize() {
+    _firebaseAuth.authStateChanges().listen((User? firebaseUser) {
+      if (firebaseUser != null) {
+        // Convert Firebase user to app user
+        _currentUser = _convertFirebaseUserToAppUser(firebaseUser);
+        _authStateController.add(true);
+      } else {
+        _currentUser = null;
+        _authStateController.add(false);
+      }
+    });
+  }
+
+  // Convert Firebase User to app User
+  app_user.User _convertFirebaseUserToAppUser(User firebaseUser) {
+    return app_user.User(
+      id: firebaseUser.uid,
+      name: firebaseUser.displayName ?? _extractNameFromEmail(firebaseUser.email ?? ''),
+      email: firebaseUser.email ?? '',
+      phone: firebaseUser.phoneNumber ?? '',
+      role: app_user.UserRole.both,
+      verificationStatus: firebaseUser.emailVerified 
+          ? app_user.VerificationStatus.verified 
+          : app_user.VerificationStatus.pending,
+      createdAt: firebaseUser.metadata.creationTime ?? DateTime.now(),
+      profileImageUrl: firebaseUser.photoURL,
+      isVerifiedArtisan: false,
+    );
+  }
+
+  // Email/Password login
   Future<AuthResult> login(String email, String password) async {
-    await Future.delayed(const Duration(seconds: 1));
+    try {
+      // Special case for test user
+      if (email == 'seraphex@gmail.com' && password == 'searaphex') {
+        final user = app_user.User(
+          id: 'test_user_001',
+          name: 'Seraphex User',
+          email: email,
+          phone: '+91 98765 43210',
+          role: app_user.UserRole.both,
+          verificationStatus: app_user.VerificationStatus.verified,
+          createdAt: DateTime.now().subtract(const Duration(days: 30)),
+          isVerifiedArtisan: true,
+          bio: 'Test user for development purposes',
+          address: 'Test Address, Test City, Test State',
+        );
 
-    // Mock validation
-    if (email.isEmpty || password.isEmpty) {
-      return const AuthResult(
-        success: false,
-        message: 'Please enter both email and password',
-      );
-    }
+        _currentUser = user;
+        _authStateController.add(true);
 
-    if (password.length < 6) {
-      return const AuthResult(
-        success: false,
-        message: 'Password must be at least 6 characters',
-      );
-    }
+        return AuthResult(
+          success: true,
+          message: 'Login successful',
+          user: user,
+        );
+      }
 
-    // Test credentials for development
-    if (email == 'seraphex@gmail.com' && password == 'searaphex') {
-      final user = User(
-        id: 'test_user_001',
-        name: 'Seraphex User',
+      // Validation
+      if (email.isEmpty || password.isEmpty) {
+        return const AuthResult(
+          success: false,
+          message: 'Please enter both email and password',
+        );
+      }
+
+      if (password.length < 6) {
+        return const AuthResult(
+          success: false,
+          message: 'Password must be at least 6 characters',
+        );
+      }
+
+      // Firebase login
+      final UserCredential credential = await _firebaseAuth.signInWithEmailAndPassword(
         email: email,
-        phone: '+91 98765 43210',
-        role: UserRole.both,
-        verificationStatus: VerificationStatus.verified,
-        createdAt: DateTime.now().subtract(const Duration(days: 30)),
-        isVerifiedArtisan: true,
-        bio: 'Test user for development purposes',
-        address: 'Test Address, Test City, Test State',
+        password: password,
       );
 
-      _currentUser = user;
-      _isLoggedIn = true;
-
-      return AuthResult(
-        success: true,
-        message: 'Login successful',
-        user: user,
+      if (credential.user != null) {
+        _currentUser = _convertFirebaseUserToAppUser(credential.user!);
+        return AuthResult(
+          success: true,
+          message: 'Login successful',
+          user: _currentUser,
+        );
+      } else {
+        return const AuthResult(
+          success: false,
+          message: 'Login failed',
+        );
+      }
+    } on FirebaseAuthException catch (e) {
+      String message = 'Login failed';
+      switch (e.code) {
+        case 'user-not-found':
+          message = 'No user found with this email address';
+          break;
+        case 'wrong-password':
+          message = 'Invalid password';
+          break;
+        case 'invalid-email':
+          message = 'Invalid email address';
+          break;
+        case 'user-disabled':
+          message = 'This account has been disabled';
+          break;
+        case 'too-many-requests':
+          message = 'Too many failed attempts. Please try again later';
+          break;
+        default:
+          message = e.message ?? 'Login failed';
+      }
+      return AuthResult(success: false, message: message);
+    } catch (e) {
+      return const AuthResult(
+        success: false,
+        message: 'An error occurred. Please try again.',
       );
     }
-
-    // For other emails, create a new user
-    final user = User(
-      id: 'user_${DateTime.now().millisecondsSinceEpoch}',
-      name: _extractNameFromEmail(email),
-      email: email,
-      phone: '+91 98765 43210',
-      role: UserRole.both,
-      verificationStatus: VerificationStatus.pending,
-      createdAt: DateTime.now(),
-    );
-
-    _currentUser = user;
-    _isLoggedIn = true;
-
-    return AuthResult(
-      success: true,
-      message: 'Login successful',
-      user: user,
-    );
   }
 
   // Google Sign In
   Future<AuthResult> signInWithGoogle() async {
-    await Future.delayed(const Duration(seconds: 2));
+    try {
+      final GoogleSignInAccount? googleUser = await _googleSignIn.signIn();
+      
+      if (googleUser == null) {
+        return const AuthResult(
+          success: false,
+          message: 'Google sign in was cancelled',
+        );
+      }
 
-    // Mock Google sign in
-    final user = User(
-      id: 'google_user_${DateTime.now().millisecondsSinceEpoch}',
-      name: 'Google User',
-      email: 'user@gmail.com',
-      phone: '+91 98765 43210',
-      role: UserRole.both,
-      verificationStatus: VerificationStatus.verified,
-      createdAt: DateTime.now(),
-      profileImageUrl: 'https://via.placeholder.com/150/4285F4/FFFFFF?text=G',
-    );
+      final GoogleSignInAuthentication googleAuth = await googleUser.authentication;
 
-    _currentUser = user;
-    _isLoggedIn = true;
+      final credential = GoogleAuthProvider.credential(
+        accessToken: googleAuth.accessToken,
+        idToken: googleAuth.idToken,
+      );
 
-    return AuthResult(
-      success: true,
-      message: 'Google sign in successful',
-      user: user,
-    );
+      final UserCredential userCredential = await _firebaseAuth.signInWithCredential(credential);
+
+      if (userCredential.user != null) {
+        _currentUser = _convertFirebaseUserToAppUser(userCredential.user!);
+        return AuthResult(
+          success: true,
+          message: 'Google sign in successful',
+          user: _currentUser,
+        );
+      } else {
+        return const AuthResult(
+          success: false,
+          message: 'Google sign in failed',
+        );
+      }
+    } catch (e) {
+      return AuthResult(
+        success: false,
+        message: 'Google sign in error: ${e.toString()}',
+      );
+    }
   }
 
-  // Facebook Sign In
+  // Facebook Sign In - Placeholder (you'll need to implement facebook_auth package)
   Future<AuthResult> signInWithFacebook() async {
+    // For now, return mock result
     await Future.delayed(const Duration(seconds: 2));
 
     // Mock Facebook sign in
-    final user = User(
+    final user = app_user.User(
       id: 'facebook_user_${DateTime.now().millisecondsSinceEpoch}',
       name: 'Facebook User',
       email: 'user@facebook.com',
       phone: '+91 98765 43210',
-      role: UserRole.both,
-      verificationStatus: VerificationStatus.verified,
+      role: app_user.UserRole.both,
+      verificationStatus: app_user.VerificationStatus.verified,
       createdAt: DateTime.now(),
       profileImageUrl: 'https://via.placeholder.com/150/1877F2/FFFFFF?text=F',
     );
 
     _currentUser = user;
-    _isLoggedIn = true;
+    _authStateController.add(true);
 
     return AuthResult(
       success: true,
@@ -141,64 +225,102 @@ class AuthService {
     );
   }
 
+  // Register with Firebase
   Future<AuthResult> register({
     required String name,
     required String email,
     required String password,
     required String phone,
-    required UserRole role,
+    required app_user.UserRole role,
     String? aadhaarNumber,
   }) async {
-    await Future.delayed(const Duration(seconds: 2));
+    try {
+      // Mock validation
+      if (name.isEmpty || email.isEmpty || password.isEmpty || phone.isEmpty) {
+        return const AuthResult(
+          success: false,
+          message: 'Please fill in all required fields',
+        );
+      }
 
-    // Mock validation
-    if (name.isEmpty || email.isEmpty || password.isEmpty || phone.isEmpty) {
+      if (password.length < 6) {
+        return const AuthResult(
+          success: false,
+          message: 'Password must be at least 6 characters',
+        );
+      }
+
+      if (role == app_user.UserRole.seller &&
+          (aadhaarNumber == null || aadhaarNumber.length != 12)) {
+        return const AuthResult(
+          success: false,
+          message: 'Valid Aadhaar number required for sellers',
+        );
+      }
+
+      // Create Firebase user
+      final UserCredential credential = await _firebaseAuth.createUserWithEmailAndPassword(
+        email: email,
+        password: password,
+      );
+
+      if (credential.user != null) {
+        // Update display name
+        await credential.user!.updateDisplayName(name);
+        
+        // Create app user
+        final user = app_user.User(
+          id: credential.user!.uid,
+          name: name,
+          email: email,
+          phone: phone,
+          role: role,
+          verificationStatus: role == app_user.UserRole.seller
+              ? app_user.VerificationStatus.pending
+              : app_user.VerificationStatus.verified,
+          aadhaarNumber: aadhaarNumber,
+          createdAt: DateTime.now(),
+          isVerifiedArtisan: false,
+        );
+
+        _currentUser = user;
+
+        return AuthResult(
+          success: true,
+          message: 'Registration successful',
+          user: user,
+        );
+      } else {
+        return const AuthResult(
+          success: false,
+          message: 'Registration failed',
+        );
+      }
+    } on FirebaseAuthException catch (e) {
+      String message = 'Registration failed';
+      switch (e.code) {
+        case 'weak-password':
+          message = 'The password provided is too weak';
+          break;
+        case 'email-already-in-use':
+          message = 'An account already exists for this email';
+          break;
+        case 'invalid-email':
+          message = 'Invalid email address';
+          break;
+        default:
+          message = e.message ?? 'Registration failed';
+      }
+      return AuthResult(success: false, message: message);
+    } catch (e) {
       return const AuthResult(
         success: false,
-        message: 'Please fill in all required fields',
+        message: 'An error occurred. Please try again.',
       );
     }
-
-    if (password.length < 6) {
-      return const AuthResult(
-        success: false,
-        message: 'Password must be at least 6 characters',
-      );
-    }
-
-    if (role == UserRole.seller &&
-        (aadhaarNumber == null || aadhaarNumber.length != 12)) {
-      return const AuthResult(
-        success: false,
-        message: 'Valid Aadhaar number required for sellers',
-      );
-    }
-
-    // Mock user creation
-    final user = User(
-      id: 'user_${DateTime.now().millisecondsSinceEpoch}',
-      name: name,
-      email: email,
-      phone: phone,
-      role: role,
-      verificationStatus: role == UserRole.seller
-          ? VerificationStatus.pending
-          : VerificationStatus.verified,
-      aadhaarNumber: aadhaarNumber,
-      createdAt: DateTime.now(),
-      isVerifiedArtisan: false,
-    );
-
-    _currentUser = user;
-    _isLoggedIn = true;
-
-    return AuthResult(
-      success: true,
-      message: 'Registration successful',
-      user: user,
-    );
   }
 
+  // Phone verification
   Future<AuthResult> verifyPhone(String otp) async {
     await Future.delayed(const Duration(seconds: 1));
 
@@ -227,7 +349,7 @@ class AuthService {
 
     if (_currentUser != null) {
       _currentUser = _currentUser!.copyWith(
-        verificationStatus: VerificationStatus.pending,
+        verificationStatus: app_user.VerificationStatus.pending,
       );
 
       return const AuthResult(
@@ -242,16 +364,21 @@ class AuthService {
     );
   }
 
-  Future<User?> updateUserProfile({
+  Future<app_user.User?> updateUserProfile({
     String? name,
     String? bio,
     String? address,
     String? profileImageUrl,
-    UserRole? role,
+    app_user.UserRole? role,
   }) async {
     await Future.delayed(const Duration(seconds: 1));
 
     if (_currentUser == null) return null;
+
+    // Update Firebase user profile if needed
+    if (name != null && _firebaseAuth.currentUser != null) {
+      await _firebaseAuth.currentUser!.updateDisplayName(name);
+    }
 
     _currentUser = _currentUser!.copyWith(
       name: name,
@@ -264,13 +391,13 @@ class AuthService {
     return _currentUser;
   }
 
-  Future<bool> switchUserRole(UserRole newRole) async {
+  Future<bool> switchUserRole(app_user.UserRole newRole) async {
     await Future.delayed(const Duration(milliseconds: 500));
 
     if (_currentUser == null) return false;
 
     // Only allow switching to 'both' or if current role supports it
-    if (_currentUser!.role == UserRole.both || newRole == UserRole.both) {
+    if (_currentUser!.role == app_user.UserRole.both || newRole == app_user.UserRole.both) {
       _currentUser = _currentUser!.copyWith(role: newRole);
       return true;
     }
@@ -278,17 +405,58 @@ class AuthService {
     return false;
   }
 
-  void logout() {
+  // Logout
+  Future<void> logout() async {
+    await _firebaseAuth.signOut();
+    await _googleSignIn.signOut();
     _currentUser = null;
-    _isLoggedIn = false;
+    _authStateController.add(false);
   }
 
-  // Mock method to simulate checking if user exists
+  // Check if user exists
   Future<bool> checkUserExists(String email) async {
-    await Future.delayed(const Duration(milliseconds: 500));
-    // For MVP, always return false (new user)
-    return false;
+    try {
+      final methods = await _firebaseAuth.fetchSignInMethodsForEmail(email);
+      return methods.isNotEmpty;
+    } catch (e) {
+      return false;
+    }
   }
+
+  // Guest login functionality
+  Future<AuthResult> loginAsGuest() async {
+    try {
+      // Create a guest user without Firebase authentication
+      final guestUser = app_user.User(
+        id: 'guest_${DateTime.now().millisecondsSinceEpoch}',
+        name: 'Guest User',
+        email: 'guest@artisan-marketplace.com',
+        phone: '',
+        role: app_user.UserRole.buyer,
+        verificationStatus: app_user.VerificationStatus.verified,
+        createdAt: DateTime.now(),
+        isVerifiedArtisan: false,
+        bio: 'Browsing as guest',
+      );
+
+      _currentUser = guestUser;
+      _authStateController.add(true);
+
+      return AuthResult(
+        success: true,
+        message: 'Browsing as guest',
+        user: guestUser,
+      );
+    } catch (e) {
+      return const AuthResult(
+        success: false,
+        message: 'Failed to browse as guest',
+      );
+    }
+  }
+
+  // Check if current user is guest
+  bool get isGuestUser => _currentUser?.id.startsWith('guest_') ?? false;
 
   String _extractNameFromEmail(String email) {
     final username = email.split('@')[0];
@@ -321,7 +489,7 @@ class AuthService {
 
     if (_currentUser!.phone.isNotEmpty) progress += 0.2; // Phone verified
     if (_currentUser!.aadhaarNumber != null) progress += 0.2; // Aadhaar added
-    if (_currentUser!.verificationStatus != VerificationStatus.pending) {
+    if (_currentUser!.verificationStatus != app_user.VerificationStatus.pending) {
       progress += 0.3; // Video submitted
     }
 
@@ -336,5 +504,10 @@ class AuthService {
       'Submit verification video',
       'Wait for manual verification (NGO visit)',
     ];
+  }
+
+  // Dispose stream controller
+  void dispose() {
+    _authStateController.close();
   }
 }

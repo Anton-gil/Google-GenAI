@@ -14,6 +14,10 @@ void main() async {
   await Firebase.initializeApp(
     options: DefaultFirebaseOptions.currentPlatform,
   );
+  
+  // Initialize auth service
+  AuthService().initialize();
+  
   runApp(const ArtisanMarketplaceApp());
 }
 
@@ -58,12 +62,14 @@ class ArtisanMarketplaceApp extends StatelessWidget {
           type: BottomNavigationBarType.fixed,
           elevation: 8,
         ),
-        cardTheme: CardTheme(
+        // Fixed CardTheme compatibility issue
+        cardTheme: CardThemeData(
           color: AppColors.surface,
           elevation: 2,
           shape: RoundedRectangleBorder(
             borderRadius: BorderRadius.circular(AppStyles.radiusLarge),
           ),
+          margin: const EdgeInsets.all(4.0), // Added margin property
         ),
         elevatedButtonTheme: ElevatedButtonThemeData(
           style: AppStyles.primaryButtonStyle,
@@ -150,9 +156,10 @@ class _AuthWrapperState extends State<AuthWrapper> {
 
   @override
   Widget build(BuildContext context) {
+    // Use the proper Firebase Auth stream instead of Stream.periodic
     return StreamBuilder<bool>(
-      stream: Stream.periodic(const Duration(milliseconds: 100))
-          .map((_) => _authService.isLoggedIn),
+      stream: _authService.authStateChanges,
+      initialData: _authService.isLoggedIn,
       builder: (context, snapshot) {
         final isLoggedIn = snapshot.data ?? false;
 
